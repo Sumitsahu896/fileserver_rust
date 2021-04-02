@@ -55,7 +55,6 @@ fn main() {
                 let entry = entry_res.unwrap();
                 let this_file_name_buf = entry.file_name();
                 let this_file_name = this_file_name_buf.to_str().unwrap();
-                
                 let mut file = fs::File::open(entry.path()).expect("Can't open file!");
                 let mut contents = String::new();
 
