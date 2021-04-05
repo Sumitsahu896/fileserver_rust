@@ -6,12 +6,24 @@ pub fn search_f(mut contents: &str, search_text: &str) {
         if index_u == None {
             break;
         } else {
-            let index = contents.chars().position(|c| c == '.').unwrap();
+            let index = contents.chars().position(|c| c == '.');
+
+            let index=match index{
+                None =>{
+                    eprintln!("Error index is null");
+                    break
+                } ,
+                Some(index)=> index
+            };
+            
+
+
+
             let sub_string = &contents[0..index + 1];
             if sub_string.contains(search_text) {
                 println!("{}", sub_string);
             }
-            contents = &contents[index + 1..];
+            contents = &contents[index +1..];
         }
     }
 }
@@ -22,7 +34,17 @@ pub fn search_s(mut contents: &str, search_text: &str, file_name: &str) {
         if index_u == None {
             break;
         } else {
-            let index = contents.chars().position(|c| c == '.').unwrap();
+            let index = contents.chars().position(|c| c == '.');
+
+            let index=match index{
+                None =>{
+                    eprintln!("Error index is null");
+                    break
+                } ,
+                Some(index)=> index
+            };
+
+
             let sub_string = &contents[0..index + 1];
             if sub_string.contains(search_text) {
                 println!("{}: {}", file_name, sub_string);
