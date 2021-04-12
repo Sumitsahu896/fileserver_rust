@@ -5,18 +5,25 @@ use std::ops::{Bound, RangeBounds};
 
 fn main() {
 	println!("\nWelcome to fileserver in Rust!\n");
-	//println!(":: Registered users: login username \n:: Guests: connect guest\n");
+	
 	let mut authenticated_user=false;
-	let mut stream = TcpStream::connect("127.0.0.1:2000") // Connect to server
-			.expect("Could not connect to server"); // panic with msg if no connection
-				
+	match TcpStream::connect("localhost:2000") {
+	
+	Ok(mut stream) => {
+    			println!("Connected to the server!");
+	
+			
 	loop {
-		println!("\n:: Registered users: login username \n:: Guests: connect guest\n");
+		println!("\n:: Registered users: login username \n:: Guests: connect guest\n:: quit\n");
 		let mut input = String::new();	// string for user input
 		//let mut buffer: Vec<u8> = Vec::new(); 	// u8 vector for server responses
-		io::stdin().read_line(&mut input)	// read line of input from user
-			.expect("Failed to read from stdin");
+		match io::stdin().read_line(&mut input) {	// read line of input from user
+			Ok(_) => {
+				println!(">> {}",input);
+			},
+			Err(e) => println!("Error reading input; Please try again \n{:?}",e)
 		
+		}
 		if input.trim() == "connect guest" {
 			println!(":: Guest Commands: \n\t -- create user username\n\t -- show users \n\t -- show active\n\t -- logout\n");
 			loop {
@@ -25,9 +32,18 @@ fn main() {
 			
 				let mut cmd_guest = String::new();	// string for user input
 				
-				io::stdin().read_line(&mut cmd_guest)	// read line of input from user
-					.expect("Failed to read from stdin");
-	
+				//io::stdin().read_line(&mut cmd_guest)	// read line of input from user
+				//	.expect("Failed to read from stdin");
+				
+				match io::stdin().read_line(&mut cmd_guest) {	// read line of input from user
+					Ok(_) => {
+						println!("You entered: {}",input);
+					},
+					Err(e) => println!("Error reading input; Please try again \n{:?}",e)
+		
+				}
+				
+				
 				let cmd = cmd_guest.trim();
 				
 				//println!("guest cmd: {}", cmd);
@@ -63,7 +79,7 @@ fn main() {
 					},
 					_ => {
 						println!("invalid guest command\n");
-						println!(":: Commands: \n\t -- show users\n\t -- show active\n");
+						println!(":: Guest Commands: \n\t -- create user username\n\t -- show users \n\t -- show active\n\t -- logout\n");
 					}
 					}
     				
@@ -108,7 +124,8 @@ fn main() {
 				break
 
 			}
-			
+		} else if input.substring(0,4) == "quit" {
+			break;
 		} else { // no match on command
 			
 			println!("\nInvalid command {:?}. Please enter:\n\tconnect guest ||  login username\n", input);
@@ -133,7 +150,7 @@ fn main() {
     					continue;
     				}
 			}
-	
+			let tokens: Vec<&str> = cmd_user.trim().split_whitespace().collect();
 			let cmd = cmd_user
     				.split_whitespace()
     				.next()
@@ -143,8 +160,16 @@ fn main() {
 			match cmd {
 			"search" => {
 				
-				stream.write(cmd_user.as_bytes())
+				//match stream.write(cmd_user.as_bytes()) {
+					//Ok(_n) => println!("sent command to server"),
+					//Err(e) => {
+					//	println!("Unable to send command to server: {}, e);
+					//	continue;
+					//}
+				//}
+				stream.write(cmd_user.as_bytes()) 
 					.expect("Failed to write to server");
+	
 			
 				let mut reader = BufReader::new(&stream);
 		
@@ -186,6 +211,12 @@ fn main() {
 
 	  	} // end command loop
 	  } // end authenticated_user	
+	  
+	}, 
+	Err(e) => {
+    		println!("Couldn't connect to server...\nPlease make sure server is up and receiving connections.");
+	}
+} // end tcp connected
 }
 
 
@@ -233,3 +264,4 @@ impl StringUtils for str {
         self.substring(start, len)
     }
 }
+
