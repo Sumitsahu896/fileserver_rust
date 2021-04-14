@@ -15,6 +15,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 	println!("Received a connection from: {}", 
 		stream.peer_addr()?);	// network address of client unwrap to OK if
 	let mut buffer = [0; 1024]; 	// zero buffer
+	
 	loop {
 		let bytes_read = stream.read(&mut buffer)?; // unwrap to Ok if read from stream successful
 		if bytes_read == 0 {	// no more to read
@@ -73,8 +74,15 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
             
             					).ok();
             				
-            				search::search_f(&contents, &search_text);
             				
+            				let mut response = search::search_f(&contents, &search_text);
+            				
+            				//response.push('\n');
+            				println!("Response from search_f: {}\n", response);
+            				
+					write!(stream, "{}", contents).unwrap();
+					
+					//stream.write(&buffer[..bytes_read])?;
             				//break;
              	
             			}
@@ -83,13 +91,15 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 			
 			_ => 
 			{
-				println!("catch all for now")
+				
+				// echo data back for now
+				stream.write(&buffer[..bytes_read])?;
 				
 			},	
 		} // end match on cmd
 		
 		// echo data back for now
-		stream.write(&buffer[..bytes_read])?;
+//		stream.write(&buffer[..bytes_read])?;
 			
 	} // end loop on commands
 		
@@ -160,3 +170,4 @@ impl StringUtils for str {
         self.substring(start, len)
     }
 }
+
