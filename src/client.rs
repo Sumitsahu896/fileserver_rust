@@ -141,7 +141,13 @@ fn main() {
 	 	loop {
 			let mut cmd_user = String::new();	// string for user input
 			let mut buffer: Vec<u8> = Vec::new(); 	// u8 vector for server responses
-			println!("\n::Commands: \n -- search \n -- write\n -- send\n -- receive\n --  list files\n -- quit\n");
+			println!("\n::Commands: \n 
+				-- search [-f filename] -s text\n 
+				-- write\n 
+				-- send\n 
+				-- receive\n 
+				-- list files\n 
+				-- logout\n");
 			match io::stdin().read_line(&mut cmd_user) {
     				Ok(_n) => println!("{}", cmd_user),
     				
