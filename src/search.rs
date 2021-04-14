@@ -1,6 +1,8 @@
 // This fucntion prints the sentence that contains the text to be searched
 
 pub fn search_f(mut contents: &str, search_text: &str) {
+	// println!("search_f:: search_text: {}::slen: {}::contents: {}::clen{}\n",search_text,search_text.len(), contents,contents.len());
+
     loop {
         let index_u = contents.find('.');
         if index_u == None {
@@ -18,10 +20,10 @@ pub fn search_f(mut contents: &str, search_text: &str) {
             
 
 
-
             let sub_string = &contents[0..index + 1];
-            if sub_string.contains(search_text) {
-                println!("{}", sub_string);
+    
+            if sub_string.contains(search_text.trim()) {
+                println!("found: {}\n", sub_string);
             }
             contents = &contents[index +1..];
         }
