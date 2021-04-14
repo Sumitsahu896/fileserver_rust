@@ -1,7 +1,7 @@
 // This fucntion prints the sentence that contains the text to be searched
+pub fn search_f(mut contents: &str, search_text: &str)  -> String {
 
-pub fn search_f(mut contents: &str, search_text: &str) {
-	// println!("search_f:: search_text: {}::slen: {}::contents: {}::clen{}\n",search_text,search_text.len(), contents,contents.len());
+let mut response = String::from(" ");
 
     loop {
         let index_u = contents.find('.');
@@ -18,16 +18,18 @@ pub fn search_f(mut contents: &str, search_text: &str) {
                 Some(index)=> index
             };
             
-
-
             let sub_string = &contents[0..index + 1];
     
             if sub_string.contains(search_text.trim()) {
                 println!("found: {}\n", sub_string);
+                response.push_str(sub_string);
+               // response.push('\n');
+
             }
             contents = &contents[index +1..];
         }
     }
+   response.to_string()
 }
 
 pub fn search_s(mut contents: &str, search_text: &str, file_name: &str) {
