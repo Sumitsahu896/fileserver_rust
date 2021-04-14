@@ -37,7 +37,7 @@ fn main() {
 				
 				match io::stdin().read_line(&mut cmd_guest) {	// read line of input from user
 					Ok(_) => {
-						println!("You entered: {}",input);
+						println!("You entered: {}",cmd_guest);
 					},
 					Err(e) => println!("Error reading input; Please try again \n{:?}",e)
 		
@@ -119,7 +119,7 @@ fn main() {
     				
     			} else {
     				println!(":: authenticating .....\n");
-				let username = tokens[1];
+				let _username = tokens[1];
 				authenticated_user=true;
 				break
 
@@ -141,13 +141,7 @@ fn main() {
 	 	loop {
 			let mut cmd_user = String::new();	// string for user input
 			let mut buffer: Vec<u8> = Vec::new(); 	// u8 vector for server responses
-			println!("\n::Commands: \n 
-				-- search [-f filename] -s text\n 
-				-- write\n 
-				-- send\n 
-				-- receive\n 
-				-- list files\n 
-				-- logout\n");
+			println!("\n::Commands: \n -- search [-f filename] -s text\n -- write\n -- send\n -- receive\n -- list files\n -- logout\n");
 			match io::stdin().read_line(&mut cmd_user) {
     				Ok(_n) => println!("{}", cmd_user),
     				
@@ -181,7 +175,7 @@ fn main() {
 		
 				reader.read_until(b'\n', &mut buffer)	// read_until reads the data in buffer
 					.expect("Could not read into buffer");
-				print!("echo: {}", str::from_utf8(&buffer)	// write buffer converted 
+				print!("found in search_f: {}", str::from_utf8(&buffer)	// write buffer converted 
 					.expect("Could not write buffer as string"))
 				
 			},
