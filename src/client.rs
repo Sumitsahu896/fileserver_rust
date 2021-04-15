@@ -167,7 +167,7 @@ fn main() {
 					//	continue;
 					//}
 				//}
-				stream.write(cmd_user.as_bytes()) 
+			/*	stream.write(cmd_user.as_bytes()) 
 					.expect("Failed to write to server");
 	
 			
@@ -175,9 +175,29 @@ fn main() {
 		
 				reader.read_until(b'\n', &mut buffer)	// read_until reads the data in buffer
 					.expect("Could not read into buffer");
-				print!("found in search_f: {}", str::from_utf8(&buffer)	// write buffer converted 
+				print!("found: {}", str::from_utf8(&buffer)	// write buffer converted 
 					.expect("Could not write buffer as string"))
+			*/
+				match stream.write(cmd_user.as_bytes()) {
+					Ok(_) => (),
+					Err(err) => {
+						println!("Unable to send command to server: {}", err);
+						break;
+					}
+				}
 				
+				let mut reader = BufReader::new(&stream);
+				
+				match reader.read_until(b'\n', &mut buffer) {
+					Ok(_) => (),
+					Err(err) => {
+						println!("Unable to read into buffer: {}", err);
+						break;
+					}
+				}
+				
+				print!("found: {}", str::from_utf8(&buffer)	// write buffer converted 
+					.expect("Could not write buffer as string"))
 			},
 			"write" => {
 				println!("match: write")
