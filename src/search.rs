@@ -23,13 +23,14 @@ let mut response = String::from(" ");
             if sub_string.contains(search_text.trim()) {
                 println!("found: {}\n", sub_string);
                 response.push_str(sub_string);
-               // response.push('\n');
+                response.push('\t');
 
             }
             contents = &contents[index +1..];
         }
     }
-   response.to_string()
+   response 
+   //response.to_string()
 }
 
 pub fn search_s(mut contents: &str, search_text: &str, file_name: &str) {
