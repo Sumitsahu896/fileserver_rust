@@ -76,11 +76,16 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
             				
             				
             				let mut response = search::search_f(&contents, &search_text);
-            				
-            				//response.push('\n');
+            			
+            				response.push('\n');
             				println!("Response from search_f: {}\n", response);
             				
-					write!(stream, "{}", contents).unwrap();
+            				write!(stream, "{}",&response).unwrap();
+            	
+            				
+            				//response = contents; // this sends
+            			
+					//write!(stream, "{}", &response).unwrap(); // this sends
 					
 					//stream.write(&buffer[..bytes_read])?;
             				//break;
@@ -170,4 +175,5 @@ impl StringUtils for str {
         self.substring(start, len)
     }
 }
+
 
