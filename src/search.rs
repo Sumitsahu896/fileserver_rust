@@ -22,7 +22,7 @@ let mut response = String::from(" ");
     
             if sub_string.contains(search_text.trim()) {
                 println!("found: {}\n", sub_string);
-                response.push_str(sub_string);
+                response.push_str(sub_string.trim());
                 response.push('\t');
 
             }
