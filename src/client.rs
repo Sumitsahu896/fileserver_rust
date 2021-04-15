@@ -37,7 +37,8 @@ fn main() {
 				
 				match io::stdin().read_line(&mut cmd_guest) {	// read line of input from user
 					Ok(_) => {
-						println!("You entered: {}",cmd_guest);
+						//println!("You entered: {}",input);
+                                    println!("You entered: {}",cmd_guest);
 					},
 					Err(e) => println!("Error reading input; Please try again \n{:?}",e)
 		
@@ -119,7 +120,8 @@ fn main() {
     				
     			} else {
     				println!(":: authenticating .....\n");
-				let _username = tokens[1];
+				//let username = tokens[1];
+                        let _username = tokens[1];
 				authenticated_user=true;
 				break
 
@@ -167,37 +169,49 @@ fn main() {
 					//	continue;
 					//}
 				//}
-			/*	stream.write(cmd_user.as_bytes()) 
-					.expect("Failed to write to server");
+				//stream.write(cmd_user.as_bytes()) 
+					//.expect("Failed to write to server");
+
+
+
+                        match stream.write(cmd_user.as_bytes()) {
+                              Ok(_) => (),
+                              Err(err) => {
+                                    println!("Unable to send command to server: {}", err);
+                                    break;
+                              }
+                                       
+                              }
 	
 			
 				let mut reader = BufReader::new(&stream);
 		
-				reader.read_until(b'\n', &mut buffer)	// read_until reads the data in buffer
-					.expect("Could not read into buffer");
-				print!("found: {}", str::from_utf8(&buffer)	// write buffer converted 
-					.expect("Could not write buffer as string"))
-			*/
-				match stream.write(cmd_user.as_bytes()) {
-					Ok(_) => (),
-					Err(err) => {
-						println!("Unable to send command to server: {}", err);
-						break;
-					}
-				}
+				// reader.read_until(b'\n', &mut buffer)	// read_until reads the data in buffer
+				// 	.expect("Could not read into buffer");
+				// print!("echo: {}", str::from_utf8(&buffer)	// write buffer converted 
+				// 	.expect("Could not write buffer as string"))
+                        match reader.read_until(b'\n', &mut buffer) {
+                              Ok(_) => (),
+                              Err(err) => {
+                                    println!("Unable to read into buffer: {}", err);
+                                    break;
+                              }
+                                 
+                             }
+
+                        let buffer=match str::from_utf8(&buffer){
+                              Ok(buffer) => buffer,
+                              Err(err) => {
+                                    println!("Could not write buffer as string: {}", err);
+                                    break;
+                              }
+                                 
+                             };
+
+                  
+
+                        print!("found in search: {}",buffer);                      
 				
-				let mut reader = BufReader::new(&stream);
-				
-				match reader.read_until(b'\n', &mut buffer) {
-					Ok(_) => (),
-					Err(err) => {
-						println!("Unable to read into buffer: {}", err);
-						break;
-					}
-				}
-				
-				print!("found: {}", str::from_utf8(&buffer)	// write buffer converted 
-					.expect("Could not write buffer as string"))
 			},
 			"write" => {
 				println!("match: write")
@@ -284,4 +298,3 @@ impl StringUtils for str {
         self.substring(start, len)
     }
 }
-

@@ -1,0 +1,1 @@
+This is a text file in the users_client directory. This file belongs to the sample testing of the search functionality.
