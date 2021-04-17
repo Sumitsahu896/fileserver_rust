@@ -14,14 +14,16 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 
 // listen for messages from a client
+
 fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 	println!("Received a connection from: {}", 
-		stream.peer_addr()?);	// network address of client unwrap to OK if
+	stream.peer_addr()?);	// network address of client unwrap to OK if
 	let mut buffer = [0; 1024]; 	// zero buffer
       let mut is_authenticated=false;
       let mut is_guest=false;
       let mut username=String::from("");
-
+     
+      
     
 
 	loop {
@@ -398,12 +400,54 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                                 //return Err(err);
                                           }
                                           }
-
-                                    is_authenticated=true;
-                                    username=tokens[1].to_owned();
-                                    println!("Successful authentication");
-                                    println!("Current User: {}",username);
       
+                                    is_authenticated=true;
+                                    
+
+                                    // access the data by mutably borrowing the guard
+                                   //let vec = access(&mut guard);
+                                    let username2=tokens[1];
+                                    println!("Successful authentication");
+                                    println!("Current User: {}",username2);
+
+                                    let mut vec_usernames=words_from_file("active.txt");
+                                    vec_usernames.push(username2.to_owned());
+                                    
+                                    let usernames=vec_usernames.connect(" ");
+                                    
+                                    let mut active_file = File::create("active.txt");
+
+						match active_file{
+						   Ok(mut active_file)=>{
+							     match active_file.set_len(0){
+								     Ok(_)=>{
+									  match active_file.write_all(usernames.as_bytes()){
+										Ok(_) => (),
+										Err(err) => {
+											println!("Unable to read into buffer: {}", err);
+											return Err(err);
+										}
+									  }
+								     },
+								     Err(err) => {
+									println!("Unable to read into buffer: {}", err);
+									return Err(err);
+								}
+							     } 
+
+							    
+						   }
+						   Err(err) => {
+							println!("error opening encrypted: {}", err);
+							return Err(err);
+							
+						}
+
+						}
+
+                                    //active_users.push(username2);
+                                    //drop(active_users);
+                                   
                                      
 
 
@@ -451,9 +495,114 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                               }
                         }
 
-                        println!("shutting down connection");
+                       
+                        let mut vec_usernames=words_from_file("active.txt");
+                       
+                        
+                        
+                        
+                        let mut active_file = File::create("active.txt");
+
+                        match active_file{
+                           Ok(mut active_file)=>{
+                                   match active_file.set_len(0){
+                                         Ok(_)=>{
+                                         },
+                                         Err(err) => {
+                                          println!("Unable to read into buffer: {}", err);
+                                          return Err(err);
+                                    }
+                                   } 
+
+                                  
+                           }
+                           Err(err) => {
+                              println!("error opening encrypted: {}", err);
+                              return Err(err);
+                              
+                        }
+
+                        }
+
+
+
+
+
+
+
+
+
+                        // if let Some(pos) = active_users.iter().position(|x| *x == username) {
+                        //       active_users.remove(pos);
+                        //   };
                         stream.shutdown(std::net::Shutdown::Both)?;
+                      
+                        
                   },
+                  "show" => 
+			{
+                        if tokens[1]=="users"{
+                              
+
+                              let r_directory=fs::read_dir("./users_server/");
+                              let r_directory=match r_directory {
+                                    Err(e) =>{
+                                      eprintln!("Path problem :{:?}", e);
+                                      return Err(e)
+                                          } 
+                                   Ok(r_directory) => (r_directory)
+                                    };
+                        let mut users=String::from("");                 
+                        for entry in r_directory.filter_map(Result::ok){
+
+                              let this_file_name_buf = entry.file_name();
+                              let this_file_name = this_file_name_buf.to_str();
+                                            
+                              let this_file_name=match this_file_name{
+                                    None =>{
+                                          eprintln!("error");
+                                          break
+                                    } ,
+                                    Some(this_file_name)=> this_file_name.to_string()
+                                    };
+                                    users.push_str(" ");
+                                    users.push_str(this_file_name.as_str());
+
+                        }
+                        println!("{}",users);
+
+                        match write!(stream, "{}{}", &users,"\n"){
+                              Ok(_) => (),
+                              Err(err) => {
+                                    println!("Unable to send command to client: {}", err);
+                                    //return Err(err);
+                              }
+                              }
+
+
+                        }else if tokens[1]=="active"{
+                              let path=String::from("active.txt");
+                              let active_one=write_file_to_string_string(&path);
+                              match write!(stream, "{}{}", &active_one,"\n"){
+                                    Ok(_) => (),
+                                    Err(err) => {
+                                          println!("Unable to send command to client: {}", err);
+                                          //return Err(err);
+                                    }
+                                    }
+
+                              //let active_users_str: String = active_users.connect(" ");
+
+                              //drop(active_users);
+
+
+                        }else{
+                              println!("Invalid show command!!!");
+                        }
+
+                  },
+               
+
 			_ => 
 			{
 				println!("catch all for now");
@@ -487,17 +636,25 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 }
 
 fn main() {
-
+      
 	let listener = TcpListener::bind("127.0.0.1:2000") // client to connect to this port : 2000
 				.expect("Unable to bind"); // return listener or panic
+     
+     
+   ;
 	//let mut authenticated_user = false;
 	// incoming is iterator on connected streams
 	// loop on incoming client connections
 	for stream in listener.incoming() {
+            //let active_users_clone=active_users_shared.clone();
 		match stream {
 			Err(e) => {	eprintln!("failed: {}", e) }
 			Ok(stream) => {
+                        
 				thread::spawn(move || { //spawn thread on connection
+                              //let mut shared=active_users_clone.lock().unwrap();
+                              //let mut shared = active_users_here.lock().unwrap();
+                              //let mut lock = c_mutex.try_lock();
 					connection_thread(stream)
 					.unwrap_or_else(|error| eprintln!("{:?}", error));
 				});
@@ -507,6 +664,23 @@ fn main() {
 }
 
 
+
+
+
+fn words_from_file(filename: &str) -> Vec<String> {
+      let mut file = match File::open(filename) {
+          Ok(file) => file,
+          Err(_) => panic!("no such file"),
+      };
+      let mut file_contents = String::new();
+      file.read_to_string(&mut file_contents)
+          .ok()
+          .expect("failed to read!");
+      let lines: Vec<String> = file_contents.split(" ")
+          .map(|s: &str| s.to_string())
+          .collect();
+      lines
+  }
 
 
 
@@ -604,3 +778,6 @@ impl StringUtils for str {
         self.substring(start, len)
     }
 }
+
+
+
