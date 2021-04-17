@@ -56,43 +56,7 @@ fn encryptedTextt(encrypted_text:&mut Vec<char>,private_key:& u8,public_key:& u8
 fn main() {
 	let date = Local::now().format("%d-%m-%Y-%H-%M-%S").to_string();
       println!("{}",date);
-      // let date = Local::now().format("%d%m%Y%H%M%S").to_string();
-	// let mut rng = rand::thread_rng();
-	// let modulo:u8=64;
-      // let private_key:u8=rng.gen_range(1..modulo);
-      // let public_key:u8= modulo- (private_key);
-      // let mut encrypted_text:Vec<char>=Vec::new();
-    
-	// let encrypted_text_temp:Vec<char>=date.chars().collect();
-	// for c in &encrypted_text_temp {
-	// 	//println!("{}:{}", c,(c.to_digit(10).unwrap()+ public_key)%modulo);
-	// 	//println!("{}:{}", c,(((c.to_digit(10).unwrap()) as u8+public_key)% modulo) as char);
-	// 	println!("{}:{}", *c,((*c as u8+public_key)% modulo) as char);
 
-	// 	//encrypted_text[i]=char::from_digit((c.to_digit(10).unwrap()+public_key)% modulo, 10).unwrap();
-	// 	encrypted_text.push(((*c as u8+public_key)% modulo) as char);
-	// 	//(c.to_digit(10).unwrap()+public_key)% modulo,10;
-
-		
-	//   }
-      
-	//   let encryptedString=encrypted_text.iter().cloned().collect::<String>();  //returned encrypted string
-       // to check 
-      //   let mut server_encrypted_text:Vec<char>=Vec::new();
-
-	//   for c in encrypted_text {
-
-      //       server_encrypted_text.push(((c as u8+private_key)% modulo) as char);
-	//   }
-
-	//   //println!("hiiiii: {}",server_encrypted_text.iter().cloned().collect::<String>());
-	//   let serverstring=server_encrypted_text.iter().cloned().collect::<String>();
-
-	//   println!("{}",serverstring);
-
-	//   const RADIX: u32 = 10;
-	//   let x = "134";
-	//   println!("{}", x.chars().map(|c| c.to_digit(RADIX).unwrap()).sum::<u32>());
 
 	println!("\nWelcome to fileserver in Rust!\n");
 	
@@ -475,11 +439,52 @@ fn main() {
     				2 => {
     					match cmd {
 					"show users" => {
-						println!("match: show users")
+						println!("match: show users");
+
+						match write!(&stream, "{}{}", &"show users","\n"){
+							Ok(_) => (),
+							Err(err) => {
+								println!("Unable to send command to server: {}", err);
+								break
+								//return Err(err);
+							}
+							}
+						let mut reader = BufReader::new(&stream);
+						let mut msg11=String::from("");
+						match reader.read_line(&mut msg11) {
+							Ok(_) => (),
+							Err(err) => {
+								println!("Unable to read into buffer: {}", err);
+								break;
+							}
+								   
+							}
+
+							println!("Users: {}",msg11.trim());
 				
 					},
 					"show active" => {
-						println!("match: show active")
+						println!("match: show active");
+
+						match write!(&stream, "{}{}", &"show active","\n"){
+							Ok(_) => (),
+							Err(err) => {
+								println!("Unable to send command to server: {}", err);
+								break
+								//return Err(err);
+							}
+							}
+						let mut reader = BufReader::new(&stream);
+						let mut msg13=String::from("");
+						match reader.read_line(&mut msg13) {
+							Ok(_) => (),
+							Err(err) => {
+								println!("Unable to read into buffer: {}", err);
+								break;
+							}
+								   
+							}
+							println!("Active Users: {}",msg13.trim());
 				
 					},
 					_ => {
@@ -778,3 +783,43 @@ impl StringUtils for str {
         self.substring(start, len)
     }
 }
+
+
+
+      // let date = Local::now().format("%d%m%Y%H%M%S").to_string();
+	// let mut rng = rand::thread_rng();
+	// let modulo:u8=64;
+      // let private_key:u8=rng.gen_range(1..modulo);
+      // let public_key:u8= modulo- (private_key);
+      // let mut encrypted_text:Vec<char>=Vec::new();
+    
+	// let encrypted_text_temp:Vec<char>=date.chars().collect();
+	// for c in &encrypted_text_temp {
+	// 	//println!("{}:{}", c,(c.to_digit(10).unwrap()+ public_key)%modulo);
+	// 	//println!("{}:{}", c,(((c.to_digit(10).unwrap()) as u8+public_key)% modulo) as char);
+	// 	println!("{}:{}", *c,((*c as u8+public_key)% modulo) as char);
+
+	// 	//encrypted_text[i]=char::from_digit((c.to_digit(10).unwrap()+public_key)% modulo, 10).unwrap();
+	// 	encrypted_text.push(((*c as u8+public_key)% modulo) as char);
+	// 	//(c.to_digit(10).unwrap()+public_key)% modulo,10;
+
+		
+	//   }
+      
+	//   let encryptedString=encrypted_text.iter().cloned().collect::<String>();  //returned encrypted string
+       // to check 
+      //   let mut server_encrypted_text:Vec<char>=Vec::new();
+
+	//   for c in encrypted_text {
+
+      //       server_encrypted_text.push(((c as u8+private_key)% modulo) as char);
+	//   }
+
+	//   //println!("hiiiii: {}",server_encrypted_text.iter().cloned().collect::<String>());
+	//   let serverstring=server_encrypted_text.iter().cloned().collect::<String>();
+
+	//   println!("{}",serverstring);
+
+	//   const RADIX: u32 = 10;
+	//   let x = "134";
+	//   println!("{}", x.chars().map(|c| c.to_digit(RADIX).unwrap()).sum::<u32>());
