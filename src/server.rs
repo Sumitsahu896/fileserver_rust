@@ -8,15 +8,20 @@ use std::net::{TcpListener, TcpStream};
 use std::thread;
 use std::ops::{Bound, RangeBounds};
 use std::sync::{Arc, Mutex};
-
+use std::path::Path;
 use std::io::{Read, Write, Error};
+use std::fs::File;
+use std::io::{self, BufRead, BufReader};
 
 // listen for messages from a client
 fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 	println!("Received a connection from: {}", 
 		stream.peer_addr()?);	// network address of client unwrap to OK if
 	let mut buffer = [0; 1024]; 	// zero buffer
-      
+      let mut is_authenticated=false;
+      let mut is_guest=false;
+      let mut username=String::from("");
+
     
 
 	loop {
@@ -33,47 +38,137 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 		
 		let tokens: Vec<&str> = cmd_line.trim().split_whitespace().collect();
     		let mut args: Vec<String> = cmd_line.trim().split_whitespace().map(str::to_string).collect();
-            let mut path = PathBuf::new();
-            path.push("./users_server/");
-            path.push("irfan/");
+
 		match tokens[0] {
 			"search" => {
-				println!("SEARCH HERE !!!");
-	
-    				let file_name;
-        			let search_text;
-        			if args[1] == "-f" && args.iter().any(|i| i=="-s"){
-        				println!("f and s found\n");
-            				if args.len() < 5 {
-                				println!("Please insert the correct format and try again! The format is “search -f [FILE NAME] -s [TEXT]” or “search -f [FILE NAME] -s [TEXT]”");
-                				//break;
-            				}else{
 
-                                   
-            				file_name = &args[2];
-            			
-                                    path.push(file_name);
-                             
-					      let search_text_args: Vec<_> = args.drain(4..).collect();
-            			      search_text = search_text_args.join(" ");
-
-                                    //let mut file=Arc::new(Mutex::new(fs::File::open(path))).lock().unwrap();
-                           
-            				
-            				let  contents= write_file_to_string(&path);
-
-                                    if contents=="Problem opening the file"{
-
-                                       println!("{}",contents);
-                                    }else{
+                        if is_authenticated{
+                              println!("SEARCH HERE !!!");
+                              let mut path = PathBuf::new();
+                              path.push("./users_server/");
+                              path.push(&username);
+                                  let file_name;
+                                let search_text;
+                                if args[1] == "-f" && args.iter().any(|i| i=="-s"){
+                                      println!("f and s found\n");
+                                          if args.len() < 5 {
+                                              println!("Please insert the correct format and try again! The format is “search -f [FILE NAME] -s [TEXT]” or “search -f [FILE NAME] -s [TEXT]”");
+                                              //break;
+                                          }else{
+      
                                          
-                                          let mut response = search::search_f(&contents, &search_text);
-
-            				       //response.push('\n');
-            				       println!("Response from search_f: {}", response);
-                                           response.push('\n');
-					             //write!(stream, "{}", &response).unwrap();
-                                           match write!(stream, "{}", &response){
+                                          file_name = &args[2];
+                                    
+                                          path.push(file_name);
+                                   
+                                          let search_text_args: Vec<_> = args.drain(4..).collect();
+                                          search_text = search_text_args.join(" ");
+      
+                                          //let mut file=Arc::new(Mutex::new(fs::File::open(path))).lock().unwrap();
+                                 
+                                          
+                                          let  contents= write_file_to_string(&path);
+      
+                                          if contents=="Problem opening the file"{
+      
+                                             println!("{}",contents);
+                                          }else{
+                                               
+                                                let mut response = search::search_f(&contents, &search_text);
+      
+                                                 //response.push('\n');
+                                                 println!("Response from search_f: {}", response);
+                                                 response.push('\n');
+                                                 //write!(stream, "{}", &response).unwrap();
+                                                 match write!(stream, "{}", &response){
+                                                      Ok(_) => (),
+                                                      Err(err) => {
+                                                            println!("Unable to send command to server: {}", err);
+                                                            return Err(err);
+                                                      }
+                                                               
+                                                      }
+                                             
+                                               
+                                          }
+      
+                                         
+                                          }
+                                     }else if args[1] != "-f" && args[1]=="-s"{
+                                          println!("search -s found\n");
+                                          if args.len() < 3 {
+                                                println!("Please insert the correct format and try again! The format is “search -f [FILE NAME] -s [TEXT]” or “search -f [FILE NAME] -s [TEXT]”");
+                                               
+                                          }
+                                          else{
+                                                let search_text_args: Vec<_> = args.drain(2..).collect();
+                                                search_text = search_text_args.join(" ");
+                      
+                                                //let mut path_string=String::from("./users_server/irfan/");
+         
+      
+      
+                                                //let r_directory=fs::read_dir(path2).unwrap();
+                                                let r_directory=fs::read_dir(path);
+                                                let r_directory=match r_directory {
+                                                 Err(e) =>{
+                                                      eprintln!("Path problem :{:?}", e);
+                                                      return Err(e)
+                                                      } 
+                                                  Ok(r_directory) => (r_directory)
+                                                 };
+                                                 let mut answer=String::from("");
+                                                 for entry_res in r_directory.filter_map(Result::ok){
+            
+                                                      let entry = entry_res;
+                                            
+                                                      //if entry.is_err() { continue; }
+                                            
+                                                      // let entry=match entry{
+                                                      //     _ =>{
+                                                      //         eprintln!("error reading directory");
+                                                      //         break;
+                                                      //     } ,
+                                                      //     Ok(entry) => entry
+                                                      // };
+                                            
+                                                      let this_file_name_buf = entry.file_name();
+                                                      let this_file_name = this_file_name_buf.to_str();
+                                            
+                                                      let this_file_name=match this_file_name{
+                                                          None =>{
+                                                              eprintln!("error");
+                                                              break
+                                                          } ,
+                                                          Some(this_file_name)=> this_file_name.to_string()
+                                                      };
+                                                     
+                        
+                                                     let  contents= write_file_to_string(&entry.path());
+      
+                                                     if contents=="Problem opening the file"{
+            
+                                                      println!("{}",contents);
+                                                      }else{
+                                                         
+                                                            let mut response =  search::search_s(&contents, &search_text, &this_file_name);
+                                                            //println!("Response from search_s: {}", response);
+                                                            response.push('\n');
+                                                            answer.push_str(response.as_str());
+                                                            
+                                                     }
+                                                   
+                                                  
+                                                      
+                                                
+      
+      
+                                          }
+                                          println!("Response from search_s: {}", answer);
+                                          //write!(stream, "{}", &answer).unwrap();
+      
+      
+                                          match write!(stream, "{}", &answer){
                                                 Ok(_) => (),
                                                 Err(err) => {
                                                       println!("Unable to send command to server: {}", err);
@@ -81,124 +176,284 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                                 }
                                                          
                                                 }
+                                          
+                                    }
+                              }
+
+                        }else{
+                              println!("only authenticated users can use search functionality");
+                        }
+
+
+
+        			
+			},
+
+                  "create" =>{
+                        println!("user command: {}",cmd_line);
+                        let mut msg = String::new();
+                        //let mut already_created:i8=0;
+                        let mut user_path=String::from("users_server/");
+
+                        user_path.push_str(tokens[2]);
+
+                        if Path::new(&user_path).exists(){
+                              //already_created=1;
+                             //user exists
+
+                              match write!(stream, "{}", &"User is already created. Please try again.\n"){
+                              Ok(_) => (),
+                              Err(err) => {
+                                    println!("Unable to send command to server: {}", err);
+                                    //return Err(err);
+                              }
+                              }
+                        }else{
+                            
+                              //create user here
+                              match fs::create_dir(&user_path) {
+                                    Err(why) => {
+                                          println!("! {:?}", why.kind());
+
+                                          match write!(stream, "{}", &"Error creating user dir..\n"){
+                                                Ok(_) => (),
+                                                Err(err) => {
+                                                      println!("Unable to send command to server: {}", err);
+                                                      return Err(err);
+                                                }
+                                          }
+
+
+                                    },
+                                    Ok(_) => {
                                          
-                                    }
+                                          //user_path+"/txt.pub"
+                                          //user_path+"/txt.encrypt"
+                                          let mut user_pub_file = File::create([&mut user_path, "/txt.pub"].join(""))?;
+                                          let mut user_enc_file = File::create([&mut user_path, "/txt.encrypt"].join(""))?;
 
-                                    // (|| {
-            				// match file {
-                                    //             Ok(file) => {
-                                                    
-                                                        
-                                    //             file.read_to_string(&mut contents).map_err(
-                                    //                         |err| println!("{:?}", err)
-                                      
-                                    //                               ).ok();
-                                                              
-                                    //             search::search_f(&contents, &search_text);
-                                    //             return;            
-                                    //              // Ok!
-                                                      
-                                    //               },
-                                    //             Err(error)=> {
-                                                      
-                                    //                   eprintln!("Problem opening the file: {}",error);
-                                    //                   return;
-                                                      
-                                    //                 }
-                                    //             }
-                                    //       })();
-                                            
-            				
-            				//break;
-                                    }
-            			 }else if args[1] != "-f" && args[1]=="-s"{
-                                    println!("search -s found\n");
-                                    if args.len() < 3 {
-                                          println!("Please insert the correct format and try again! The format is “search -f [FILE NAME] -s [TEXT]” or “search -f [FILE NAME] -s [TEXT]”");
-                                         
-                                    }
-                                    else{
-                                          let search_text_args: Vec<_> = args.drain(2..).collect();
-                                          search_text = search_text_args.join(" ");
-                
-                                          //let mut path_string=String::from("./users_server/irfan/");
-   
+                                          match write!(stream, "{}", &"request public key\n"){
+                                                Ok(_) => {
+                                                      println!("requested public key");
+                                                      ()
+                                                },
+                                                Err(err) => {
+                                                      println!("Unable to send command to server: {}", err);
+                                                      return Err(err);
+                                                }
+                                          }
+                                          let mut reader = BufReader::new(&stream);
+                                          match reader.read_line(&mut msg) {
+								Ok(_) => (),
+								Err(err) => {
+									println!("Unable to read into buffer: {}", err);
+									return Err(err);
+								}
+								   
+							     }
+
+                                          user_pub_file.write_all(msg.trim().as_bytes())?;
 
 
-                                          //let r_directory=fs::read_dir(path2).unwrap();
-                                          let r_directory=fs::read_dir(path);
-                                          let r_directory=match r_directory {
-                                           Err(e) =>{
-                                                eprintln!("Path problem :{:?}", e);
-                                                return Err(e)
-                                                } 
-                                            Ok(r_directory) => (r_directory)
-                                           };
-                                           let mut answer=String::from("");
-                                           for entry_res in r_directory.filter_map(Result::ok){
-      
-                                                let entry = entry_res;
-                                      
-                                                //if entry.is_err() { continue; }
-                                      
-                                                // let entry=match entry{
-                                                //     _ =>{
-                                                //         eprintln!("error reading directory");
-                                                //         break;
-                                                //     } ,
-                                                //     Ok(entry) => entry
-                                                // };
-                                      
-                                                let this_file_name_buf = entry.file_name();
-                                                let this_file_name = this_file_name_buf.to_str();
-                                      
-                                                let this_file_name=match this_file_name{
-                                                    None =>{
-                                                        eprintln!("error");
-                                                        break
-                                                    } ,
-                                                    Some(this_file_name)=> this_file_name.to_string()
-                                                };
-                                               
-                  
-                                               let  contents= write_file_to_string(&entry.path());
 
-                                               if contents=="Problem opening the file"{
-      
-                                                println!("{}",contents);
-                                                }else{
-                                                   
-                                                      let mut response =  search::search_s(&contents, &search_text, &this_file_name);
-                                                      //println!("Response from search_s: {}", response);
-                                                      response.push('\n');
-                                                      answer.push_str(response.as_str());
-                                                      
-                                               }
-                                             
-                                            
-                                                
+                                          match write!(stream, "{}", &"request encrypted\n"){
+                                                Ok(_) => {
+                                                      println!("requested encrypted");
+                                                      ()
+                                                }
+                                                ,
+                                                Err(err) => {
+                                                      println!("Unable to send command to server: {}", err);
+                                                      return Err(err);
+                                                }
+                                          }
+                                          let mut reader = BufReader::new(&stream);
+                                          let mut msg2=String::from("");
+                                          match reader.read_line(&mut msg2) {
+								Ok(_) => (),
+								Err(err) => {
+									println!("Unable to read into buffer: {}", err);
+									return Err(err);
+								}
+								   
+							     }
+                                          
+                                          user_enc_file.write_all(msg2.trim().as_bytes())?;
+
                                           
 
 
+                                          match write!(stream, "{}", &"User creation successful. Please login\n"){
+                                                Ok(_) => {
+                                                      println!("user creation successful");
+                                                      ()
+                                                }
+                                                ,
+                                                Err(err) => {
+                                                      println!("Unable to send command to server: {}", err);
+                                                      return Err(err);
+                                                }
+                                          }
+
+                                          //user_enc_file.write_all(b"Hello, world!")?;
+
+
+
+                                    },
+                                }
+
+                              
+                              
+
+
+                       }
+                        // let mut answer="this".to_string();
+                        // answer.push_str("\n");
+
+                        // match write!(stream, "{}", &answer){
+                        //       Ok(_) => (),
+                        //       Err(err) => {
+                        //             println!("Unable to send command to server: {}", err);
+                        //             return Err(err);
+                        //       }
+                                       
+                        //       }
+                              
+
+                  },
+
+
+                  "login"=>{
+                        println!("login attempt");
+                        println!("user command: {}",cmd_line);
+
+                      
+                        
+                       
+                        //let mut already_created:i8=0;
+                        let mut user_path=String::from("users_server/");
+
+                        user_path.push_str(tokens[1]);
+
+                        if Path::new(&user_path).exists(){
+                              //already_created=1;
+                             //user exists
+                              println!("exist user with this name {}",tokens[1]);
+
+
+                              match write!(stream, "{}", &"request encrypted\n"){
+                                    Ok(_) => (),
+                                    Err(err) => {
+                                          println!("Unable to send command to client: {}", err);
+                                          //return Err(err);
                                     }
-                                    println!("Response from search_s: {}", answer);
-                                    //write!(stream, "{}", &answer).unwrap();
+                                    }
+
+                              let mut reader = BufReader::new(&stream);
+                              let mut msg7=String::from("");
+                              match reader.read_line(&mut msg7) {
+                                    Ok(_) => (),
+                                    Err(err) => {
+                                          println!("Unable to read into buffer: {}", err);
+                                          return Err(err);
+                                    }
 
 
-                                    match write!(stream, "{}", &answer){
+                                             
+                              }
+                              //msg7 is the oldencryptedtext coming from the client
+
+                              let oldencrypted_text=write_file_to_string_string(&[&user_path, "/txt.encrypt"].join(""));
+
+                              if msg7.trim()== oldencrypted_text {
+                                    println!("Old encrypted matched.Requesting new encrypted");
+
+                                    match write!(stream, "{}", &"Old encrypted matched.Requesting new encrypted\n"){
                                           Ok(_) => (),
                                           Err(err) => {
-                                                println!("Unable to send command to server: {}", err);
+                                                println!("Unable to send command to client: {}", err);
+                                                //return Err(err);
+                                          }
+                                          }
+      
+                                    let mut reader = BufReader::new(&stream);
+                                    let mut msg8=String::from("");    //msg8 is the new encrypted from the client
+                                    match reader.read_line(&mut msg8) {
+                                          Ok(_) => (),
+                                          Err(err) => {
+                                                println!("Unable to read into buffer: {}", err);
                                                 return Err(err);
                                           }
-                                                   
+                                    }
+
+                                    let mut user_enc_file = File::create([&mut user_path, "/txt.encrypt"].join(""))?;
+                                    user_enc_file.set_len(0)?;
+                                    user_enc_file.write_all(msg8.trim().as_bytes())?;
+
+
+                                    match write!(stream, "{}", &"Successful authentication\n"){
+                                          Ok(_) => (),
+                                          Err(err) => {
+                                                println!("Unable to send command to client: {}", err);
+                                                //return Err(err);
                                           }
+                                          }
+
+                                    is_authenticated=true;
+                                    username=tokens[1].to_owned();
+                                    println!("Successful authentication");
+                                    println!("Current User: {}",username);
+      
+                                     
+
+
                                     
+                              }else{
+                                    println!("login failed.Wrong encrypted\n");  
+                                    match write!(stream, "{}", &"login failed.Wrong encrypted\n"){
+                                          Ok(_) => (),
+                                          Err(err) => {
+                                                println!("Unable to send command to client: {}", err);
+                                                //return Err(err);
+                                          }
+                                          }
+                                    }
+      
+                                              
+
+
+
+                         
+                        }else{
+                              println!("User is not created. Please try again.");
+
+                              match write!(stream, "{}", &"User is not created. Please try again.\n"){
+                                    Ok(_) => (),
+                                    Err(err) => {
+                                          println!("Unable to send command to client: {}", err);
+                                          //return Err(err);
+                                    }
+                                    }
+                        }
+
+                  },
+
+			"logout" => 
+			{
+
+                        let mut reader = BufReader::new(&stream);
+                        let mut msg12=String::from("");    //msg8 is the new encrypted from the client
+                        match reader.read_line(&mut msg12) {
+                              Ok(_) => (),
+                              Err(err) => {
+                                    println!("Unable to read into buffer: {}", err);
+                                    return Err(err);
                               }
                         }
-        			
-			},
-			
+
+                        println!("shutting down connection");
+                        stream.shutdown(std::net::Shutdown::Both)?;
+                  },
 			_ => 
 			{
 				println!("catch all for now");
@@ -235,7 +490,7 @@ fn main() {
 
 	let listener = TcpListener::bind("127.0.0.1:2000") // client to connect to this port : 2000
 				.expect("Unable to bind"); // return listener or panic
-	let mut authenticated_user = false;
+	//let mut authenticated_user = false;
 	// incoming is iterator on connected streams
 	// loop on incoming client connections
 	for stream in listener.incoming() {
@@ -258,6 +513,30 @@ fn main() {
 
 
 fn write_file_to_string(path1:&PathBuf)-> String
+{
+      let file = fs::File::open(&path1);
+      let mut contents = String::new();
+
+       let mut file=match file {
+          Ok(file) => file,
+          Err(error) => {
+                    eprintln!("Problem opening the file: {}",error);
+                  return "Problem opening the file".to_string();
+             
+          }
+       };
+
+       file.read_to_string(&mut contents).map_err(
+            |err| println!("{:?}", err)
+
+                  ).ok();
+              
+     
+      contents.to_string()
+}
+
+
+fn write_file_to_string_string(path1:&String)-> String
 {
       let file = fs::File::open(&path1);
       let mut contents = String::new();
