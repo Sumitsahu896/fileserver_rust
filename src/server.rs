@@ -406,12 +406,12 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
                                     // access the data by mutably borrowing the guard
                                    //let vec = access(&mut guard);
-                                    let username2=tokens[1];
+                                    username=tokens[1].to_string();
                                     println!("Successful authentication");
-                                    println!("Current User: {}",username2);
+                                    println!("Current User: {}",username);
 
                                     let mut vec_usernames=words_from_file("active.txt");
-                                    vec_usernames.push(username2.to_owned());
+                                    vec_usernames.push(username.to_owned());
                                     
                                     let usernames=vec_usernames.connect(" ");
                                     
@@ -496,9 +496,12 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                         }
 
                        
-                        let mut vec_usernames=words_from_file("active.txt");
+                        let mut active_users=words_from_file("active.txt");
+                        //let active_users=vec_usernames.join(" ");
                        
-                        
+                        if let Some(pos) = active_users.iter().position(|x| *x == username) {
+                              active_users.remove(pos);
+                          };
                         
                         
                         let mut active_file = File::create("active.txt");
@@ -507,6 +510,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                            Ok(mut active_file)=>{
                                    match active_file.set_len(0){
                                          Ok(_)=>{
+                                          active_file.write_all(active_users.join(" ").as_bytes())?  
                                          },
                                          Err(err) => {
                                           println!("Unable to read into buffer: {}", err);
@@ -532,9 +536,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
 
 
-                        // if let Some(pos) = active_users.iter().position(|x| *x == username) {
-                        //       active_users.remove(pos);
-                        //   };
+                    
                         stream.shutdown(std::net::Shutdown::Both)?;
                       
                         
