@@ -42,69 +42,82 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
     		let mut args: Vec<String> = cmd_line.trim().split_whitespace().map(str::to_string).collect();
 
 		match tokens[0] {
-			"search" => {
-
-                        if is_authenticated{
-                              println!("SEARCH HERE !!!");
-                              let mut path = PathBuf::new();
-                              path.push("./users_server/");
-                              path.push(&username);
-                                  let file_name;
-                                let search_text;
-                                if args[1] == "-f" && args.iter().any(|i| i=="-s"){
-                                      println!("f and s found\n");
-                                          if args.len() < 5 {
-                                              println!("Please insert the correct format and try again! The format is “search -f [FILE NAME] -s [TEXT]” or “search -f [FILE NAME] -s [TEXT]”");
-                                              //break;
-                                          }else{
-      
+		
+			// search -f file -s search_text
+			
+			"search" 
+				if is_authenticated && args.len() > 4 
+				&& args[1] == "-f" && args.iter().any(|i| i=="-s") => 
+				{			
+			
+                              	println!("SEARCH HERE !!!");
+                              	let mut path = PathBuf::new();
+                              	path.push("./users_server/");
+                              	path.push(&username);
+                                  
+                           
                                          
-                                          file_name = &args[2];
+                                       let file_name = &args[2];
                                     
-                                          path.push(file_name);
+                                       path.push(file_name);
                                    
-                                          let search_text_args: Vec<_> = args.drain(4..).collect();
-                                          search_text = search_text_args.join(" ");
+                                       let search_text_args: Vec<_> = args.drain(4..).collect();
+                                       let search_text = search_text_args.join(" ");
       
                                           //let mut file=Arc::new(Mutex::new(fs::File::open(path))).lock().unwrap();
                                  
                                           
-                                          let  contents= write_file_to_string(&path);
+                                       let  mut contents= write_file_to_string(&path);
       
-                                          if contents=="Problem opening the file"{
-      
-                                             println!("{}",contents);
-                                          }else{
-                                               
-                                                let mut response = search::search_f(&contents, &search_text);
-      
-                                                 //response.push('\n');
-                                                 println!("Response from search_f: {}", response);
-                                                 response.push('\n');
-                                                 //write!(stream, "{}", &response).unwrap();
-                                                 match write!(stream, "{}", &response){
-                                                      Ok(_) => (),
-                                                      Err(err) => {
-                                                            println!("Unable to send command to server: {}", err);
-                                                            return Err(err);
-                                                      }
+                                       if contents=="Problem opening the file"{
+                                       	contents.push('\n');
+      					       match write!(stream, "{}", &contents){
+                                                  Ok(_) => (),
+                                                  Err(err) => {
+                                                        println!("Unable to send command to client: {}", err);
+                                                        return Err(err);
+                                                   }
                                                                
-                                                      }
+                                              }
+                                             println!("{}",contents);
+                                       }else{
+                                               
+                                             let mut response = search::search_f(&contents, &search_text);
+      
+                                              
+                                             println!("Response from search_f: {}", response);
+                                             response.push('\n');
+                                             //write!(stream, "{}", &response).unwrap();
+                                             match write!(stream, "{}", &response){
+                                                  Ok(_) => (),
+                                                  Err(err) => {
+                                                        println!("Unable to send command to client: {}", err);
+                                                        return Err(err);
+                                                   }
+                                                               
+                                              }
                                              
                                                
                                           }
       
-                                         
-                                          }
-                                     }else if args[1] != "-f" && args[1]=="-s"{
+                                     },   // end search -f file -s search_text 
+                                       
+                                 
+                                   
+                                   // search -s search_text
+                                   
+                                   "search" 
+                                   	if is_authenticated && 
+                                   	args.len() > 2 && args[1] == "-s" => 
+                                   	{
                                           println!("search -s found\n");
-                                          if args.len() < 3 {
-                                                println!("Please insert the correct format and try again! The format is “search -f [FILE NAME] -s [TEXT]” or “search -f [FILE NAME] -s [TEXT]”");
-                                               
-                                          }
-                                          else{
+                                      
+                                           	let mut path = PathBuf::new();
+                              		path.push("./users_server/");
+                              		path.push(&username);
+                                  		
                                                 let search_text_args: Vec<_> = args.drain(2..).collect();
-                                                search_text = search_text_args.join(" ");
+                                                let search_text = search_text_args.join(" ");
                       
                                                 //let mut path_string=String::from("./users_server/irfan/");
          
@@ -155,20 +168,18 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                                          
                                                             let mut response =  search::search_s(&contents, &search_text, &this_file_name);
                                                             //println!("Response from search_s: {}", response);
-                                                            response.push('\n');
-                                                            answer.push_str(response.as_str());
+                                                            
+                                                           println!("pushing::: trim:: {}\n", response);
+                                                            answer.push_str(response.as_str().trim());
                                                             
                                                      }
                                                    
-                                                  
-                                                      
-                                                
-      
+                                 
       
                                           }
                                           println!("Response from search_s: {}", answer);
                                           //write!(stream, "{}", &answer).unwrap();
-      
+      					    answer.push('\n');
       
                                           match write!(stream, "{}", &answer){
                                                 Ok(_) => (),
@@ -177,19 +188,19 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                                       return Err(err);
                                                 }
                                                          
-                                                }
+                                          }
                                           
-                                    }
-                              }
+                          //          }
+                           //   }
 
-                        }else{
-                              println!("only authenticated users can use search functionality");
-                        }
+                      //  }else{
+                      //        println!("only authenticated users can use search functionality");
+                       // }
 
 
 
         			
-			},
+			}, // end search -s search_text
 
                   "create" =>{
                         println!("user command: {}",cmd_line);
@@ -309,20 +320,9 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
 
                        }
-                        // let mut answer="this".to_string();
-                        // answer.push_str("\n");
+                       
 
-                        // match write!(stream, "{}", &answer){
-                        //       Ok(_) => (),
-                        //       Err(err) => {
-                        //             println!("Unable to send command to server: {}", err);
-                        //             return Err(err);
-                        //       }
-                                       
-                        //       }
-                              
-
-                  },
+                  },  // end create
 
 
                   "login"=>{
@@ -406,12 +406,12 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
                                     // access the data by mutably borrowing the guard
                                    //let vec = access(&mut guard);
-                                    let username2=tokens[1];
+                                    username=tokens[1].to_string();
                                     println!("Successful authentication");
-                                    println!("Current User: {}",username2);
+                                    println!("Current User: {}",username);
 
                                     let mut vec_usernames=words_from_file("active.txt");
-                                    vec_usernames.push(username2.to_owned());
+                                    vec_usernames.push(username.to_owned());
                                     
                                     let usernames=vec_usernames.connect(" ");
                                     
@@ -480,7 +480,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                     }
                         }
 
-                  },
+                  }, // end login
 
 			"logout" => 
 			{
@@ -496,9 +496,12 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                         }
 
                        
-                        let mut vec_usernames=words_from_file("active.txt");
+                        let mut active_users=words_from_file("active.txt");
+                        //let active_users=vec_usernames.join(" ");
                        
-                        
+                        if let Some(pos) = active_users.iter().position(|x| *x == username) {
+                              active_users.remove(pos);
+                          };
                         
                         
                         let mut active_file = File::create("active.txt");
@@ -507,6 +510,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                            Ok(mut active_file)=>{
                                    match active_file.set_len(0){
                                          Ok(_)=>{
+                                          active_file.write_all(active_users.join(" ").as_bytes())?  
                                          },
                                          Err(err) => {
                                           println!("Unable to read into buffer: {}", err);
@@ -532,13 +536,11 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
 
 
-                        // if let Some(pos) = active_users.iter().position(|x| *x == username) {
-                        //       active_users.remove(pos);
-                        //   };
+                    
                         stream.shutdown(std::net::Shutdown::Both)?;
                       
                         
-                  },
+                  }, // end logout
                   "show" => 
 			{
                         if tokens[1]=="users"{
@@ -600,25 +602,27 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                               println!("Invalid show command!!!");
                         }
 
-                  },
+                  }, // end show
                
 
 			_ => 
 			{
 				println!("catch all for now");
-                        // echo data back for now
-			
+                        	
+				//if !authenticated_user && tokens[0] == "search" {
+				//	response = "only authenticated users may use search\n";
+				//} else {	
+					let response = "Invalid command line -- Please check syntax :)\n";
+				//}
+ 				match write!(stream, "{}", &response){
+                                       Ok(_) => (),
+                                       Err(err) => {
+                                              println!("Unable to send command to client: {}", err);
+                                              return Err(err);
+                                       }
+                                                               
+                               }
 
-
-                        match stream.write(&buffer[..bytes_read]) {
-                              Ok(_) => (),
-                              Err(err) => {
-                                    println!("Unable to send command to server: {}", err);
-                                    return Err(err)
-                              }
-                                       
-                              }
-				
 			},	
 		} // end match on cmd
 		
@@ -639,7 +643,7 @@ fn main() {
       
 	let listener = TcpListener::bind("127.0.0.1:2000") // client to connect to this port : 2000
 				.expect("Unable to bind"); // return listener or panic
-     
+    
      
    ;
 	//let mut authenticated_user = false;
@@ -778,6 +782,5 @@ impl StringUtils for str {
         self.substring(start, len)
     }
 }
-
 
 
