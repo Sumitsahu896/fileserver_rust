@@ -2,8 +2,11 @@
 use std::env;
 mod search;
 use std::fs;
+use std::str;
+use std::io::SeekFrom;
 use std::io::prelude::*;
 use std::path::PathBuf;
+use std::fs::OpenOptions;
 use std::net::{TcpListener, TcpStream};
 use std::thread;
 use std::ops::{Bound, RangeBounds};
@@ -202,7 +205,201 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
         			
 			}, // end search -s search_text
 
-                  "create" =>{
+                  "write" if is_authenticated && args.len() > 2 && args[1] == "-a" => {
+                        println!("user command: {}",cmd_line);
+
+                        //set file path
+                        let mut path = PathBuf::new();
+                        path.push("./users_server/");
+                        path.push(&username);
+                        path.push(&args[2]);
+
+                        let mut contents = write_file_to_string(&path);
+
+                        if contents == "Problem opening the file"{
+                              match write!(stream, "{}", &"Problem finding file\n"){
+                                    Ok(_) => (),
+                                    Err(err) => {
+                                          println!("Unable to send command to server: {}", err);
+                                          return Err(err);
+                                    }
+                              }
+                        }
+                        else{
+
+                              //open file with append options
+                              let mut file = OpenOptions::new()
+                              .write(true)
+                              .append(true)
+                              .open(path)
+                              .unwrap();
+
+                              //ask client for text to append
+                              match write!(stream, "{}", &"Enter text to append to end of file\n"){
+                                    Ok(_) => (),
+                                    Err(err) => {
+                                          println!("Unable to send command to server: {}", err);
+                                         return Err(err);
+                                    }
+                              }
+
+                              //read text from client
+                              let mut reader = BufReader::new(&stream);
+                              let mut msg=String::from("");
+
+				      match reader.read_line(&mut msg) {
+					      Ok(_) => (),
+					      Err(err) => {
+					      	println!("Unable to read into buffer: {}", err);
+					      }
+                              }
+                              msg.pop();
+                              println!("From client: {}", msg);
+
+                              //write to file, append only
+                              if let Err(e) = write!(file, "{}", &msg) {
+                                    eprintln!("Couldn't write to file: {}", e);
+                                }
+
+                        }
+
+
+                  }, // end write -a
+
+                  "write" if is_authenticated && args.len() > 2 && args[1] == "-n" => {
+                        println!("user command: {}",cmd_line);
+
+                        //set file path
+                        let mut path = PathBuf::new();
+                        path.push("./users_server/");
+                        path.push(&username);
+                        path.push(&args[2]);
+
+                        let mut contents = write_file_to_string(&path);
+
+                        if contents == "Problem opening the file"{
+                              match write!(stream, "{}", &"Problem finding file\n"){
+                                    Ok(_) => (),
+                                    Err(err) => {
+                                          println!("Unable to send command to server: {}", err);
+                                          return Err(err);
+                                    }
+                              }
+                        }
+                        else{
+
+                              //open file
+                              let mut file = OpenOptions::new()
+                              .write(true)
+                              .open(path)
+                              .unwrap();
+
+                              //ask client for text
+                              match write!(stream, "{}", &"Enter text to overwrite\n"){
+                                    Ok(_) => (),
+                                    Err(err) => {
+                                          println!("Unable to send command to server: {}", err);
+                                         return Err(err);
+                                    }
+                              }
+
+                              //read text from client
+                              let mut reader = BufReader::new(&stream);
+                              let mut msg=String::from("");
+
+				      match reader.read_line(&mut msg) {
+					      Ok(_) => (),
+					      Err(err) => {
+					      	println!("Unable to read into buffer: {}", err);
+					      }
+                              }
+                              msg.pop();
+                              println!("From client: {}", msg);
+
+                              //write to file, overwrite text
+                              if let Err(e) = file.seek(SeekFrom::Start(0)){
+                                    eprintln!("Couldn't seek in file: {}", e);
+                              }
+                              if let Err(e) = write!(file, "{}", &msg) {
+                                    eprintln!("Couldn't write to file: {}", e);
+                              }
+
+
+                        }
+
+
+                  }, // end write -n
+
+                  "write" if is_authenticated && args.len() > 2 && args[1] == "-f" => {
+                        println!("user command: {}",cmd_line);
+
+                        //set file path
+                        let mut path = PathBuf::new();
+                        path.push("./users_server/");
+                        path.push(&username);
+                        path.push(&args[2]);
+
+                        let mut contents = write_file_to_string(&path);
+
+                        if contents == "Problem opening the file"{
+                              match write!(stream, "{}", &"Problem finding file\n"){
+                                    Ok(_) => (),
+                                    Err(err) => {
+                                          println!("Unable to send command to server: {}", err);
+                                          return Err(err);
+                                    }
+                              }
+                        }
+                        else{
+
+                              //open file
+                              let mut file = OpenOptions::new()
+                              .write(true)
+                              .open(&path)
+                              .unwrap();
+
+                              //ask client for text
+                              match write!(stream, "{}", &"Enter text to prepend\n"){
+                                    Ok(_) => (),
+                                    Err(err) => {
+                                          println!("Unable to send command to server: {}", err);
+                                         return Err(err);
+                                    }
+                              }
+
+                              //read text from client
+                              let mut reader = BufReader::new(&stream);
+                              let mut msg=String::from("");
+
+				      match reader.read_line(&mut msg) {
+					      Ok(_) => (),
+					      Err(err) => {
+					      	println!("Unable to read into buffer: {}", err);
+					      }
+                              }
+                              msg.pop();
+                              println!("From client: {}", msg);
+
+                              //append file contents to data received from client
+                              msg.push_str(&contents);
+
+                              //delete destination file
+                              fs::remove_file(&path)?;
+
+                              //revive destination file
+                              let mut temp_file = File::create(&path)?;
+
+                              //write properly formatted data to destination file
+                              temp_file.write_all(&msg.as_bytes())?;
+
+
+
+                        }
+
+
+                  }, // end write -f
+
+                  "create" => {
                         println!("user command: {}",cmd_line);
                         let mut msg = String::new();
                         //let mut already_created:i8=0;

@@ -129,7 +129,65 @@ fn main() {
 				     
 			     },
 			     "write" => {
-				     println!("match: write")
+
+					//send cmd to server
+					match stream.write(cmd_user.as_bytes()) {
+						Ok(_) => (),
+						Err(err) => {
+							println!("Unable to send command to server: {}", err);
+							break;
+						}
+							 
+					}
+
+					//read response from server
+					let mut reader = BufReader::new(&stream);
+
+					match reader.read_until(b'\n', &mut buffer) {
+						Ok(_) => (),
+						Err(err) => {
+							println!("Unable to read into buffer: {}", err);
+							break;
+						}
+						 
+					   }
+	
+					let buffer=match str::from_utf8(&buffer){
+						Ok(buffer) => buffer,
+						Err(err) => {
+							println!("Could not write buffer as string: {}", err);
+							break;
+						}
+						 
+					   };			
+	
+					println!("{}",buffer);
+
+					if buffer == "Problem finding file\n"{
+						
+					}
+					else{
+						//send text to server
+						let mut res = String::new();
+						match io::stdin().read_line(&mut res) {
+							Ok(n) => println!("From stdin: {}", res),
+							Err(error) => {
+								println!("Unable to read from stdin: {}", error);
+								continue;
+							}
+						}
+
+						println!("Sent to server: {}", res.trim());
+					
+					
+						match stream.write(res.as_bytes()) {
+							Ok(_) => (),
+							Err(err) => {
+								println!("Unable to send text to server: {}", err);
+								break;
+							} 
+						}
+					}
 				     
 			     },
 			     "send" => {
