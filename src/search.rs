@@ -1,15 +1,17 @@
 // This fucntion prints the sentence that contains the text to be searched
 
 pub fn search_f(mut contents: &str, search_text: &str)  -> String {
+	
 	let mut response = String::from(" ");
+	
 
     loop {
         let index_u = contents.find('.');
         if index_u == None {
             break;
         } else {
-            let index = contents.chars().position(|c| c == '.');
-
+            let index = contents.chars().position(|c| c == '.' || c == '?' || c == '!');
+		
             let index=match index{
                 None =>{
                     eprintln!("Error index is null");
@@ -25,7 +27,7 @@ pub fn search_f(mut contents: &str, search_text: &str)  -> String {
             if sub_string.contains(search_text.trim()) {
                 println!("found: {}\n", sub_string);
                 response.push_str(sub_string.trim());
-                response.push('\t');
+                response.push('\n');
             }
             contents = &contents[index +1..];
         }
@@ -44,7 +46,8 @@ pub fn search_s(mut contents: &str, search_text: &str, file_name: &str) -> Strin
         if index_u == None {
             break;
         } else {
-            let index = contents.chars().position(|c| c == '.');
+            //let index = contents.chars().position(|c| c == '.');
+            let index = contents.chars().position(|c| c == '.' || c == '?' || c == '!');
 
             let index=match index{
                 None =>{
