@@ -20,4 +20,5 @@ A user can search for specific texts in its files in the remote server:
   
   
 ## How to run:
-> Cargo run search -f [FILE_NAME] -s [TEXT]
+> cargo run --bin server
+> cargo run --bin client
