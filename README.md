@@ -20,5 +20,5 @@ A user can search for specific texts in its files in the remote server:
   
   
 ## How to run:
-> cargo run --bin server
+> cargo run --bin server<br>
 > cargo run --bin client
