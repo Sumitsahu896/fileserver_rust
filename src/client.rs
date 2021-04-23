@@ -126,7 +126,7 @@ fn main() {
      
 			     
      
-				     print!("found in search:\n {}",buffer);                      
+				     print!("found in search:\n{}",buffer);                      
 				     
 			     },
 			     "write" => {
@@ -198,10 +198,45 @@ fn main() {
 			     "receive" => {
 				     println!("match: receive")
 				     
+				     
 			     },
 			     "list" => 
 			     {
-				     println!("match: list")
+				     println!("directory listing::");
+				     	match stream.write(cmd_user.as_bytes()) {
+					     Ok(_) => (),
+					     Err(err) => {
+						     println!("Unable to send command to server: {}", err);
+						     break;
+					     }
+							  
+					     }
+	     
+			     
+				     let mut reader = BufReader::new(&stream);
+		     
+				   
+				     match reader.read_until(b'#', &mut buffer) {
+					     Ok(_) => (),
+					     Err(err) => {
+						     println!("Unable to read into buffer: {}", err);
+						     break;
+					     }
+						  
+					}
+     
+				     let buffer=match str::from_utf8(&buffer){
+					     Ok(buffer) => buffer,
+					     Err(err) => {
+						     println!("Could not write buffer as string: {}", err);
+						     break;
+					     }
+						  
+					};
+     
+			     
+     
+				     print!("{}\nThat's all folks! \n",buffer); 
 				     
 			     },
 			     "logout" => 
