@@ -528,7 +528,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                    
                   "list" if is_authenticated && args.len() > 1 && args[1] == "files" => {
                         println!("list files:: user command: {}",cmd_line);
-//=================== list files code ================================================
+
 			let mut path = PathBuf::new();
                        path.push("./users_server/");
              		path.push(&username);
@@ -571,9 +571,6 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                                          
                         }
                                                             
-
-//-================== end list files code ===============================================
-
 		   },
                   "login"=>{
                         println!("login attempt");
