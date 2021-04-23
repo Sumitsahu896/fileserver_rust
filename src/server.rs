@@ -178,7 +178,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                                            println!("pushing::{}\n", response);
                                                            // answer.push_str(response.as_str().trim());
                                                            answer.push_str(response.as_str());
-                                                            
+                                                           
                                                      }
                                                    
                                  
@@ -525,8 +525,56 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                        
 
                   },  // end create
+                   
+                  "list" if is_authenticated && args.len() > 1 && args[1] == "files" => {
+                        println!("list files:: user command: {}",cmd_line);
+//=================== list files code ================================================
+			let mut path = PathBuf::new();
+                       path.push("./users_server/");
+             		path.push(&username);
+                                  		
+                                        
+                       let r_directory=fs::read_dir(path);
+                       let r_directory=match r_directory {
+                       	Err(e) =>{
+                               	eprintln!("Path problem :{:?}", e);
+                                       return Err(e)
+                                } 
+                                Ok(r_directory) => (r_directory)
+                       };
+                       let mut file_list=String::from("");
+                       for entry_res in r_directory.filter_map(Result::ok){
+            
+                       	let entry = entry_res;
+                                            
+                      		let this_file_name_buf = entry.file_name();
+                      		
+                       	let this_file_name = this_file_name_buf.to_str();
+                                       
+                       	let this_file_name=match this_file_name{
+                                None =>{
+                                       eprintln!("error");
+                                       break
+                                } ,
+                                Some(this_file_name)=> this_file_name.to_string()
+                        	};
+                       	file_list.push_str(this_file_name.as_str()); 
+                       	file_list.push('\n');    
+			}
+			file_list.push('#'); 
+                      	match write!(stream, "{}", &file_list){
+                               Ok(_) => (),
+                               Err(err) => {
+                                      println!("Unable to send command to server: {}", err);
+                                      return Err(err);
+                                }
+                                                         
+                        }
+                                                            
 
+//-================== end list files code ===============================================
 
+		   },
                   "login"=>{
                         println!("login attempt");
                         println!("user command: {}",cmd_line);
