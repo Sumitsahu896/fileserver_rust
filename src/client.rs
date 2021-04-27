@@ -58,11 +58,31 @@ fn main() {
       println!("{}",date);
 
 
-	println!("\nWelcome to fileserver in Rust!\n");
+	
+    	println!("\nWelcome to fileserver in Rust!\n");
+	println!("\nEnter the fileserver's connection port (2000 or 7070):");
+
+    	let mut line = String::new();
+
+    	io::stdin()
+       	 .read_line(&mut line)
+       	 .expect("Failed to read input");
+	let conn_port: u16 = match line.trim().parse() {
+		Ok(num) => num,
+		Err(error) => { println!("Must enter a valid u16 number, 0-65535");
+				return;
+		}
+	};
+	
+    
+
+    	println!("conn_port::{}", conn_port);
+
 	
 	let mut authenticated_user=false;
 	let mut guest_user=false;
-	match TcpStream::connect("localhost:2000") {
+	//match TcpStream::connect("localhost:2000") {
+	match TcpStream::connect(("127.0.0.1", conn_port)) {
 	
 	Ok(mut stream) => {
     			println!("Connected to the server!");
