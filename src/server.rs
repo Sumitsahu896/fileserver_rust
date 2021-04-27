@@ -8,6 +8,7 @@ use std::io::prelude::*;
 use std::path::PathBuf;
 use std::fs::OpenOptions;
 use std::net::{TcpListener, TcpStream};
+use std::net::{SocketAddr};
 use std::thread;
 use std::ops::{Bound, RangeBounds};
 use std::sync::{Arc, Mutex};
@@ -918,9 +919,16 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 }
 
 fn main() {
+ 	let addrs = [
+      		SocketAddr::from(([127, 0, 0, 1], 2000)),
+      		SocketAddr::from(([127, 0, 0, 1], 7070)),
+      	];
+      	let listener = TcpListener::bind(&addrs[..]).expect("Unable to bind");
+      	println!("Server listening on port: {}", listener.local_addr().unwrap());
       
-	let listener = TcpListener::bind("127.0.0.1:2000") // client to connect to this port : 2000
-				.expect("Unable to bind"); // return listener or panic
+      
+	//let listener = TcpListener::bind("127.0.0.1:2000") // client to connect to this port : 2000
+	//			.expect("Unable to bind"); // return listener or panic
     
      
    ;
