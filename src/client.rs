@@ -333,7 +333,7 @@ fn main() {
     				3 => {
     					match tokens[0] {
 					"create" => {
-
+                                    
 						if tokens[1]=="user"
 						{
 							
@@ -359,6 +359,19 @@ fn main() {
 
 						
 						      if msg.trim()=="request public key" {
+
+								match fs::create_dir_all("users_client/") {
+									Err(why) => {
+										println!("! {:?}", why.kind());
+										break
+										
+			
+			
+									},
+									Ok(_) => {
+										println!("users_client directory is created.");
+									}
+								}	
 	
                                                println!("response back: {}",msg.trim()); 
                                                //now create public,private and encrypted
@@ -536,49 +549,53 @@ fn main() {
 						println!("match: show users");
 
 						match write!(&stream, "{}{}", &"show users","\n"){
-							Ok(_) => (),
+							Ok(_) => {
+								let mut reader = BufReader::new(&stream);
+								let mut msg11=String::from("");
+								match reader.read_line(&mut msg11) {
+									Ok(_) => (),
+									Err(err) => {
+										println!("Unable to read into buffer: {}", err);
+										//break;
+									}
+										   
+									}
+		
+									println!("Users: {}",msg11.trim());
+							},
 							Err(err) => {
 								println!("Unable to send command to server: {}", err);
-								break
+								//break
 								//return Err(err);
 							}
 							}
-						let mut reader = BufReader::new(&stream);
-						let mut msg11=String::from("");
-						match reader.read_line(&mut msg11) {
-							Ok(_) => (),
-							Err(err) => {
-								println!("Unable to read into buffer: {}", err);
-								break;
-							}
-								   
-							}
 
-							println!("Users: {}",msg11.trim());
 				
 					},
 					"show active" => {
 						println!("match: show active");
 
 						match write!(&stream, "{}{}", &"show active","\n"){
-							Ok(_) => (),
-							Err(err) => {
-								println!("Unable to send command to server: {}", err);
-								break
-								//return Err(err);
-							}
-							}
-						let mut reader = BufReader::new(&stream);
-						let mut msg13=String::from("");
-						match reader.read_line(&mut msg13) {
-							Ok(_) => (),
-							Err(err) => {
-								println!("Unable to read into buffer: {}", err);
-								break;
+							Ok(_) => {
+								let mut reader = BufReader::new(&stream);
+								let mut msg13=String::from("");
+								match reader.read_line(&mut msg13) {
+								Ok(_) => (),
+								Err(err) => {
+									println!("Unable to read into buffer: {}", err);
+								//break;
 							}
 								   
 							}
 							println!("Active Users: {}",msg13.trim());
+							},
+							Err(err) => {
+								println!("Unable to send command to server here: {}", err);
+								//break
+								//return Err(err);
+							}
+							}
+						
 				
 					},
 					_ => {

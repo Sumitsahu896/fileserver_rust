@@ -25,10 +25,23 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
       let mut is_authenticated=false;
       let mut is_guest=false;
       let mut username=String::from("");
-     
+      match fs::create_dir_all("users_server/") {
+            Err(why) => {
+                  println!("! {:?}", why.kind());
+                  println!("Unable to create users_server directory: {}", why);
+                  return Err(why);
+              
+                  
+
+
+            },
+            Ok(_) => {
+                  println!("users_server directory is created.");
+            }
+      }	
       
     
-
+      
 	loop {
 		let bytes_read = stream.read(&mut buffer)?; // unwrap to Ok if read from stream successful
 		if bytes_read == 0 {	// no more to read
@@ -42,6 +55,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 		// split the command line into tokens: tokens[0] .. tokens[params-1]
 		
 		let tokens: Vec<&str> = cmd_line.trim().split_whitespace().collect();
+            println!("command is: {}",cmd_line);
     		let mut args: Vec<String> = cmd_line.trim().split_whitespace().map(str::to_string).collect();
 
 		match tokens[0] {
@@ -656,13 +670,19 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                     username=tokens[1].to_string();
                                     println!("Successful authentication");
                                     println!("Current User: {}",username);
+                                    let active_file =OpenOptions::new()
+                                    .read(true)
+                                    .write(true)
+                                    .create(true)
+                                    .open("active.txt");
 
                                     let mut vec_usernames=words_from_file("active.txt");
                                     vec_usernames.push(username.to_owned());
                                     
                                     let usernames=vec_usernames.connect(" ");
                                     
-                                    let mut active_file = File::create("active.txt");
+                                    //let mut active_file = File::create("active.txt");
+
 
 						match active_file{
 						   Ok(mut active_file)=>{
@@ -750,8 +770,14 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                               active_users.remove(pos);
                           };
                         
+
+                        let active_file =OpenOptions::new()
+                          .read(true)
+                          .write(true)
+                          .create(true)
+                          .open("active.txt");
                         
-                        let mut active_file = File::create("active.txt");
+                        //let mut active_file = File::create("active.txt");
 
                         match active_file{
                            Ok(mut active_file)=>{
@@ -820,7 +846,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                         }
                         println!("{}",users);
 
-                        match write!(stream, "{}{}", &users,"\n"){
+                        match write!(stream, "{}{}", &users.trim(),"\n"){
                               Ok(_) => (),
                               Err(err) => {
                                     println!("Unable to send command to client: {}", err);
@@ -830,8 +856,13 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
 
                         }else if tokens[1]=="active"{
+                         
+                              
                               let path=String::from("active.txt");
-                              let active_one=write_file_to_string_string(&path);
+                              let mut active_one=write_file_to_string_string(&path);
+                              if active_one==""{
+                                 active_one.push_str("there is no active user for now");
+                              }
                               match write!(stream, "{}{}", &active_one,"\n"){
                                     Ok(_) => (),
                                     Err(err) => {
@@ -939,7 +970,13 @@ fn words_from_file(filename: &str) -> Vec<String> {
 
 fn write_file_to_string(path1:&PathBuf)-> String
 {
-      let file = fs::File::open(&path1);
+      
+      let file =OpenOptions::new()
+      .read(true)
+      .write(true)
+      .create(true)
+      .open(&path1);
+      //let file = fs::File::open(&path1);
       let mut contents = String::new();
 
        let mut file=match file {
@@ -963,7 +1000,13 @@ fn write_file_to_string(path1:&PathBuf)-> String
 
 fn write_file_to_string_string(path1:&String)-> String
 {
-      let file = fs::File::open(&path1);
+      
+      let file =OpenOptions::new()
+      .read(true)
+      .write(true)
+      .create(true)
+      .open(&path1);
+      //let file = fs::File::open(&path1);
       let mut contents = String::new();
 
        let mut file=match file {
