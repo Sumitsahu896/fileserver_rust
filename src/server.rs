@@ -64,8 +64,8 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 			// search -f file -s search_text
 			
 			"search" 
-				if is_authenticated && args.len() > 4 
-				&& args[1] == "-f" && args.iter().any(|i| i=="-s") => 
+			//	if is_authenticated && 
+				if args.len() > 4 && args[1] == "-f" && args.iter().any(|i| i=="-s") => 
 				{			
 			
                               	println!("SEARCH -f HERE !!!");
@@ -91,7 +91,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                        let  mut contents= write_file_to_string(&path);
       
                                        if contents=="Problem opening the file"{
-                                       	contents.push('#');
+                                       	contents.push('\r');
       					       match write!(stream, "{}", &contents){
                                                   Ok(_) => (),
                                                   Err(err) => {
@@ -107,7 +107,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
       
                                              
                                              println!("Response from search_f: {}", response);
-                                             response.push('#');
+                                             response.push('\r');
                                              //write!(stream, "{}", &response).unwrap();
                                              match write!(stream, "{}", &response){
                                                   Ok(_) => (),
@@ -128,9 +128,8 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                    // search -s search_text
                                    
                                    "search" 
-                                   	if is_authenticated && 
-                                   	args.len() > 2 && args[1] == "-s" => 
-                                   	{
+                                 //  	if is_authenticated && 
+                                   	if args.len() > 2 && args[1] == "-s" => {
                                           println!("search -s found\n");
                                       
                                            	let mut path = PathBuf::new();
@@ -202,7 +201,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                           println!("Response from search_s: {}", answer);
                                           //write!(stream, "{}", &answer).unwrap();
       					   // answer.push('\n');
-      					   answer.push('#');
+      					   answer.push('\r');
       
                                           match write!(stream, "{}", &answer){
                                                 Ok(_) => (),
@@ -225,7 +224,8 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
         			
 			}, // end search -s search_text
 
-                  "write" if is_authenticated && args.len() > 2 && args[1] == "-a" => {
+                  "write" if args.len() > 2 && args[1] == "-a" => {
+                  //"write" if is_authenticated && args.len() > 2 && args[1] == "-a" => {
                         println!("write -a::user command: {}",cmd_line);
 
                         //set file path
@@ -286,7 +286,8 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
                   }, // end write -a
 
-                  "write" if is_authenticated && args.len() > 2 && args[1] == "-n" => {
+                  "write" if args.len() > 2 && args[1] == "-n" => {
+                  // "write" if is_authenticated && args.len() > 2 && args[1] == "-n" => {
                         println!("write -n::user command: {}",cmd_line);
 
                         //set file path
@@ -350,7 +351,8 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
                   }, // end write -n
 
-                  "write" if is_authenticated && args.len() > 2 && args[1] == "-f" => {
+                  //"write" if is_authenticated && args.len() > 2 && args[1] == "-f" => {
+                  "write" if args.len() > 2 && args[1] == "-f" => {
                         println!("write -f:: user command: {}",cmd_line);
 
                         //set file path
@@ -532,16 +534,14 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                     },
                                 }
 
-                              
-                              
-
 
                        }
                        
 
                   },  // end create
                    
-                  "list" if is_authenticated && args.len() > 1 && args[1] == "files" => {
+                 // "list" if is_authenticated && args.len() > 1 && args[1] == "files" => {
+                 "list" if args.len() > 1 && args[1] == "files" => {
                         println!("list files:: user command: {}",cmd_line);
 
 			let mut path = PathBuf::new();
@@ -576,7 +576,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                        	file_list.push_str(this_file_name.as_str()); 
                        	file_list.push('\n');    
 			}
-			file_list.push('#'); 
+			file_list.push('\r'); 
                       	match write!(stream, "{}", &file_list){
                                Ok(_) => (),
                                Err(err) => {
@@ -973,9 +973,32 @@ fn words_from_file(filename: &str) -> Vec<String> {
   }
 
 
+fn write_file_to_string(path1:&PathBuf)-> String
+{
+      let file = fs::File::open(&path1);
+      let mut contents = String::new();
+
+       let mut file=match file {
+          Ok(file) => file,
+          Err(error) => {
+                    eprintln!("Problem opening the file: {}",error);
+                  return "Problem opening the file".to_string();
+             
+          }
+       };
+
+       file.read_to_string(&mut contents).map_err(
+            |err| println!("{:?}", err)
+
+                  ).ok();
+              
+     
+      contents.to_string()
+}
 
 
 
+/*
 fn write_file_to_string(path1:&PathBuf)-> String
 {
       
@@ -1004,7 +1027,7 @@ fn write_file_to_string(path1:&PathBuf)-> String
      
       contents.to_string()
 }
-
+*/
 
 fn write_file_to_string_string(path1:&String)-> String
 {
@@ -1080,4 +1103,5 @@ impl StringUtils for str {
         self.substring(start, len)
     }
 }
+
 
