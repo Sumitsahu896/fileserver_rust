@@ -60,7 +60,7 @@ fn main() {
 
 	
     	println!("\nWelcome to fileserver in Rust!\n");
-	println!("\nEnter the fileserver's connection port (2000 or 7070):");
+	println!("\nPlease enter the fileserver's connection port (2000 or 7070): ");
 
     	let mut line = String::new();
 
@@ -126,7 +126,7 @@ fn main() {
 				     let mut reader = BufReader::new(&stream);
 		     
 				   //  match reader.read_until(b'\n', &mut buffer) {
-				   match reader.read_until(b'#', &mut buffer) {
+				   match reader.read_until(b'\r', &mut buffer) {
 					     Ok(_) => (),
 					     Err(err) => {
 						     println!("Unable to read into buffer: {}", err);
@@ -145,7 +145,7 @@ fn main() {
 					    };
      
 			     
-     
+     					
 				     print!("found in search:\n{}",buffer);                      
 				     
 			     },
@@ -236,7 +236,7 @@ fn main() {
 				     let mut reader = BufReader::new(&stream);
 		     
 				   
-				     match reader.read_until(b'#', &mut buffer) {
+				     match reader.read_until(b'\r', &mut buffer) {
 					     Ok(_) => (),
 					     Err(err) => {
 						     println!("Unable to read into buffer: {}", err);
@@ -317,8 +317,6 @@ fn main() {
 			
 			loop {
 			
-			
-			
 				let mut cmd_guest = String::new();	// string for user input
 				//let mut buffer = [0 as u8; 8]; // using 8 byte buffer
 				let mut buffer: Vec<u8> = Vec::new(); 	// u8 vector for server responses
@@ -349,13 +347,12 @@ fn main() {
 				// .unwrap_or("");
 		            //    println!("cmd: {}", cmd);
     	
-    				match tokens.len() {
-    				3 => {
-    					match tokens[0] {
+    			//	match tokens.len() {
+    			//	3 => {
+    			match tokens[0] {
 					"create" => {
                                     
-						if tokens[1]=="user"
-						{
+						if tokens.len() == 3 && tokens[1]=="user" {
 							
 							match stream.write(cmd_guest.as_bytes()) {
 								Ok(_) => (),
@@ -364,8 +361,8 @@ fn main() {
 									break;
 								}
 									   
-								}
-				                  let mut reader = BufReader::new(&stream);
+							}
+				                  	let mut reader = BufReader::new(&stream);
 					
 						
 							match reader.read_line(&mut msg) {
@@ -375,10 +372,10 @@ fn main() {
 									break;
 								}
 								   
-							     }
+							}
 
 						
-						      if msg.trim()=="request public key" {
+						      	if msg.trim()=="request public key" {
 
 								match fs::create_dir_all("users_client/") {
 									Err(why) => {
@@ -393,84 +390,81 @@ fn main() {
 									}
 								}	
 	
-                                               println!("response back: {}",msg.trim()); 
-                                               //now create public,private and encrypted
-							     let mut user_path=String::from("users_client/");
+                                               		println!("response back: {}",msg.trim()); 
+                                               		//now create public,private and encrypted
+							     	let mut user_path=String::from("users_client/");
 
-                                               user_path.push_str(tokens[2]);   //tokens[2] is username
+                                               		user_path.push_str(tokens[2]);   //tokens[2] is username
 
-							     match fs::create_dir(&user_path) {
-								Err(why) => {
-									println!("! {:?}", why.kind());
-									break
-									
-		
-		
-								},
-								Ok(_) => {
-								let mut private_key:u8=0;
-								let mut public_key:u8=0;
-								let mut encrypted_text:Vec<char>=Vec::new();
+							     	match fs::create_dir(&user_path) {
+									Err(why) => {
+										println!("! {:?}", why.kind());
+										break
+									},
+									Ok(_) => {
+										let mut private_key:u8=0;
+										let mut public_key:u8=0;
+										let mut encrypted_text:Vec<char>=Vec::new();
 
-								encryption(&mut encrypted_text,&mut private_key,&mut public_key);
+										encryption(&mut encrypted_text,&mut private_key,&mut public_key);
 								 
 								
 
-                                                //let pub_st=public_key.to_string().push_str("\n");
+                                                				//let pub_st=public_key.to_string().push_str("\n");
 
 
 								
-								match write!(&stream, "{}{}", &public_key,"\n"){
-									Ok(_) => (),
-									Err(err) => {
-										println!("Unable to send command to server: {}", err);
-										break
-										//return Err(err);
-									}
-									}
-								let mut reader = BufReader::new(&stream);
-								let mut msg2=String::from("");
-								match reader.read_line(&mut msg2) {
-									Ok(_) => (),
-									Err(err) => {
-										println!("Unable to read into buffer: {}", err);
-										break;
-									}
+										match write!(&stream, "{}{}", &public_key,"\n"){
+											Ok(_) => (),
+											Err(err) => {
+												println!("Unable to send command to server: {}", err);
+												break
+												//return Err(err);
+											}
+										}
+										let mut reader = BufReader::new(&stream);
+										let mut msg2=String::from("");
+										match reader.read_line(&mut msg2) {
+											Ok(_) => (),
+											Err(err) => {
+												println!("Unable to read into buffer: {}", err);
+												break;
+											}
 										   
-									}
-									//println!("arizali mesaj icerigi:{}",&msg2);
-								if msg2.trim()=="request encrypted" {
+										}
+										//println!("arizali mesaj icerigi:{}",&msg2);
+										if msg2.trim()=="request encrypted" {
 	
-									println!("response back: {}",msg2.trim()); 
-									let encrypted_string=encrypted_text.iter().cloned().collect::<String>();
+											println!("response back: {}",msg2.trim()); 
+											let encrypted_string=encrypted_text.iter().cloned().collect::<String>();
 
-									match write!(stream, "{}{}", &encrypted_string,"\n"){
-										Ok(_) => (),
-										Err(err) => {
-											println!("Unable to send command to server: {}", err);
-											break
-											//return Err(err);
-										}
-										}
+											match write!(stream, "{}{}", &encrypted_string,"\n"){
+												Ok(_) => (),
+												Err(err) => {
+													println!("Unable to send command to server: {}", err);
+													break
+													//return Err(err);
+												}
+											}
 
 
-									let mut reader = BufReader::new(&stream);
-								      let mut msg3=String::from("");
-								      match reader.read_line(&mut msg3) {
-									Ok(_) => (),
-									Err(err) => {
-										println!("Unable to read into buffer: {}", err);
-										break;
-									  }
+											let mut reader = BufReader::new(&stream);
+								      			let mut msg3=String::from("");
+								      			match reader.read_line(&mut msg3) {
+												Ok(_) => (),
+												Err(err) => {
+													println!("Unable to read into buffer: {}", err);
+													break;
+									  			}
 										   
-									}
+											}
 
 
-									if msg3.trim()=="User creation successful. Please login" {
-                                                            println!("response back: {}, username is: {}",msg3.trim(),tokens[2]);
+											if msg3.trim()=="User creation successful. You may logout of guest and login to your new account" {
+                                                            				println!("response back: {}, username is: {}",msg3.trim(),tokens[2]);
 
-                                                            //writing pub ,private and encrypted to the clients file system.
-                                                            match File::create([&mut user_path, "/txt.enc"].join("")){
+                                                            				//writing pub ,private and encrypted to the clients file system.
+                                                            				match File::create([&mut user_path, "/txt.enc"].join("")){
 											Ok(mut f) => {
 												match f.write_all(encrypted_string.as_bytes()){
 													Ok(_)=>(),
@@ -539,33 +533,38 @@ fn main() {
 							//
 
 						 
-						}
-					       }else{
-						println!("Error! response back: {}",msg.trim());
-					      }
+								}
+					       	}else{
+								println!("Error! response back: {}",msg.trim());
+					      		}
 							
-						}else{
+						}else{ // token0 is create - token 1 != user
 							
-							println!("invalid guest command \n");
-							println!(":: Commands: \n\t -- create user username\n");
+							println!(":To create a user account enter -> create user username");
+						
+							println!(":: Guest Commands: \n\t -- create user username\n\t -- show users \n\t -- show active\n\t -- logout\n");
+							//println!(":: Commands: \n\t -- create user username\n");
 							
 						}
 						
 						
 
-
-						//authenticated_user = true
-					},
-					_ => {
-						println!("invalid guest command \n");
-						println!(":: Commands: \n\t -- create user username\n");
-					}
-					}
+                
+						
+				//	},
+				//	_ => {
+				//		println!("invalid guest command \n");
+				//		println!(":: Guest Commands: \n\t -- create user username\n\t -- show users \n\t -- show active\n\t -- logout\n");
+				//		//println!(":: Commands: \n\t -- create user username\n");
+				//	}
+			} // end token 0 is create
     				
-    				},
-    				2 => {
-    					match cmd {
+    		//		}, // end 3 parameters
+    		//		2 => {
+    		"show" => {
+    				match cmd {
 					"show users" => {
+		
 						println!("match: show users");
 
 						match write!(&stream, "{}{}", &"show users","\n"){
@@ -593,6 +592,7 @@ fn main() {
 				
 					},
 					"show active" => {
+		
 						println!("match: show active");
 
 						match write!(&stream, "{}{}", &"show active","\n"){
@@ -619,14 +619,14 @@ fn main() {
 				
 					},
 					_ => {
-						println!("invalid guest command \n");
+						println!("show active | show users \n");
 						println!(":: Guest Commands: \n\t -- create user username\n\t -- show users \n\t -- show active\n\t -- logout\n");
 					}
-					}
-    				
-    				},
-    				1 => {
-    					match tokens[0] {
+					} 
+    			} // end show for token[0]
+    		//		}, // end match on 2 parameters
+    		//		1 => {
+    		//			match tokens[0] {
 					"logout" => {
 						authenticated_user = false;
 						guest_user=false;
@@ -634,20 +634,20 @@ fn main() {
 					},
 					_ => {
 						println!("invalid guest command \n");
-						println!(":: Commands: \n\t -- create user username\n\t -- show users \n\t -- show active\n\t -- logout\n");
+						println!(":: Guest Commands: \n\t -- create user username\n\t -- show users \n\t -- show active\n\t -- logout\n");
 					}
-					}
+	//				}
     				
-    				},
-    				_ => {
-    					println!("invalid guest command\n");
-					println!("USERNAME must not contain space");
-					println!("USERNAME must be one word length");
-					println!(":: Commands: \n\t -- create user username\n\t -- show users \n\t -- show active\n\t -- logout\n");
-					continue
+                } // end match on token[0] of guest commands
+    			//	_ => {
+    			//		println!("invalid guest command\n");
+			//		println!("USERNAME must not contain space");
+			//		println!("USERNAME must be one word length");
+			//		println!(":: Guest Commands: \n\t -- create user username\n\t -- show users \n\t -- show active\n\t -- logout\n");
+			//		continue
     				
-    				}
-    				}
+    			//	}
+    //				}
     			
 			} // end loop for guest commands
 			
