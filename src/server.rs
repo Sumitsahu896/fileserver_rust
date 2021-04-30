@@ -64,36 +64,35 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 			// search -f file -s search_text
 			
 			"search" 
-			//	if is_authenticated && 
+			//if is_authenticated && 
 				if args.len() > 4 && args[1] == "-f" && args.iter().any(|i| i=="-s") => 
 				{			
 			
-                              	println!("SEARCH -f HERE !!!");
+                              println!("SEARCH -f HERE !!!");
                               	
                               	
                               
-                              	let mut path = PathBuf::new();
-                              	path.push("./users_server/");
-                              	path.push(&username);
-                                  
-                           
-                                         
-                                       let file_name = &args[2];
+                              let mut path = PathBuf::new();
+                        	path.push("./users_server/");
+                        	path.push(&username);
+                            
+                     
+                              let file_name = &args[2];
                                     
-                                       path.push(file_name);
+                              path.push(file_name);
                                    
-                                       let search_text_args: Vec<_> = args.drain(4..).collect();
-                                       let search_text = search_text_args.join(" ");
-      
-                                          //let mut file=Arc::new(Mutex::new(fs::File::open(path))).lock().unwrap();
+                              let search_text_args: Vec<_> = args.drain(4..).collect();
+                              let search_text = search_text_args.join(" ");
+
+                              //let mut file=Arc::new(Mutex::new(fs::File::open(path))).lock().unwrap();
                                  
                                           
-                                       let  mut contents= write_file_to_string(&path);
+                              let  mut contents= write_file_to_string(&path);
       
-                                       if contents=="Problem opening the file"{
-                                       	contents.push('\r');
-      					       match write!(stream, "{}", &contents){
-                                                  Ok(_) => (),
+                              if contents=="Problem opening the file"{
+                                 	contents.push('\r');
+      				      match write!(stream, "{}", &contents){
+                                                        Ok(_) => (),
                                                   Err(err) => {
                                                         println!("Unable to send command to client: {}", err);
                                                         return Err(err);
@@ -225,7 +224,6 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 			}, // end search -s search_text
 
                   "write" if args.len() > 2 && args[1] == "-a" => {
-                  //"write" if is_authenticated && args.len() > 2 && args[1] == "-a" => {
                         println!("write -a::user command: {}",cmd_line);
 
                         //set file path
@@ -265,7 +263,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
                               //read text from client
                               let mut reader = BufReader::new(&stream);
-                              let mut msg=String::from("");
+                              let mut msg = String::from("");
 
 				      match reader.read_line(&mut msg) {
 					      Ok(_) => (),
@@ -287,7 +285,6 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                   }, // end write -a
 
                   "write" if args.len() > 2 && args[1] == "-n" => {
-                  // "write" if is_authenticated && args.len() > 2 && args[1] == "-n" => {
                         println!("write -n::user command: {}",cmd_line);
 
                         //set file path
@@ -326,7 +323,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
                               //read text from client
                               let mut reader = BufReader::new(&stream);
-                              let mut msg=String::from("");
+                              let mut msg = String::from("");
 
 				      match reader.read_line(&mut msg) {
 					      Ok(_) => (),
@@ -348,10 +345,8 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
                         }
 
-
                   }, // end write -n
 
-                  //"write" if is_authenticated && args.len() > 2 && args[1] == "-f" => {
                   "write" if args.len() > 2 && args[1] == "-f" => {
                         println!("write -f:: user command: {}",cmd_line);
 
@@ -391,7 +386,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
                               //read text from client
                               let mut reader = BufReader::new(&stream);
-                              let mut msg=String::from("");
+                              let mut msg = String::from("");
 
 				      match reader.read_line(&mut msg) {
 					      Ok(_) => (),
@@ -413,11 +408,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
                               //write properly formatted data to destination file
                               temp_file.write_all(&msg.as_bytes())?;
-
-
-
                         }
-
 
                   }, // end write -f
 
@@ -539,6 +530,81 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                        
 
                   },  // end create
+
+                  "send" if args.len() > 1 => {
+                        //specify path to user's folder
+                        let mut path = PathBuf::new();
+                        path.push("./users_server/");
+             		path.push(&username);
+                        
+                        //get filename
+                        let file_path: Vec<&str> = args[1].split("/").collect();
+                        let filename = file_path[file_path.len()-1];
+                        path.push(&filename);
+
+                        let mut file = OpenOptions::new()
+                        .write(true)
+                        .create(true)
+                        .open(&path)
+                        .unwrap();
+                        
+                        //request file size from client
+                        match write!(&stream, "{}", &"request file size\n"){
+                              Ok(_) => {
+                                    println!("requested file size");
+                                    ()
+                              },
+                              Err(err) => {
+                                    println!("Unable to send command to client: {}", err);
+                                    return Err(err);
+                              }
+                        }
+
+                        let mut reader = BufReader::new(&stream);
+                        let mut file_size_buff = Vec::new();
+
+                        match reader.read_until(b'\n', &mut file_size_buff) {
+                            Ok(_) => (),
+                            Err(err) => {
+                                println!("Unable to read into buffer: {}", err);
+                            }
+                        }
+                        file_size_buff.pop();
+
+                        //define file size
+                        let file_size = str::from_utf8(&file_size_buff).unwrap().parse::<usize>().unwrap();
+
+                        //request file bytes
+                        match write!(&stream, "{}", &"request file\n"){
+                              Ok(_) => {
+                                    println!("requested file");
+                                    ()
+                              },
+                              Err(err) => {
+                                    println!("Unable to send command to client: {}", err);
+                                    return Err(err);
+                              }
+                        }
+
+                        let mut file_bytes = vec![0u8; file_size];
+                        match reader.read_exact(&mut file_bytes) {
+                              Ok(_) => (),
+                              Err(err) => {
+                                  println!("Unable to read into buffer: {}", err);
+                              }
+                          }
+
+                        //write to file
+                        match file.write(&file_bytes){
+                              Ok(_) => (),
+                              Err(err) => {
+                                  println!("Could not write file bytes to file: {}", err);
+                              }
+                        };
+
+                        println!("Write successful\n");
+
+                  },
                    
                  // "list" if is_authenticated && args.len() > 1 && args[1] == "files" => {
                  "list" if args.len() > 1 && args[1] == "files" => {
@@ -562,7 +628,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
             
                        	let entry = entry_res;
                                             
-                      		let this_file_name_buf = entry.file_name();
+                      	let this_file_name_buf = entry.file_name();
                       		
                        	let this_file_name = this_file_name_buf.to_str();
                                        

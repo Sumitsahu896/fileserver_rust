@@ -4,7 +4,10 @@ use std::fs;
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufRead, BufReader, Write};
 use std::io::{Error, Read};
+use std::io::SeekFrom;
 use std::net::TcpStream;
+use std::path::PathBuf;
+use std::env;
 use std::ops::{Bound, RangeBounds};
 use std::str;
 extern crate chrono;
@@ -59,6 +62,7 @@ fn main() {
 
     let mut authenticated_user = false;
     let mut guest_user = false;
+    let mut username = String::new();
     //match TcpStream::connect("localhost:2000") {
     match TcpStream::connect(("127.0.0.1", conn_port)) {
         Ok(mut stream) => {
@@ -167,7 +171,118 @@ fn main() {
                                     }
                                 }
                             }
-                            "send" => println!("match: send"),
+                            "send" => {
+                                let mut path = PathBuf::new();
+                                let splitcmd: Vec<&str> = cmd_user.split(" ").collect();
+                                path.push("./users_client");
+                                path.push(&username);
+                                path.push(&splitcmd[1].trim());
+
+                                //verify if file exists
+                                let contents = write_file_to_string(&path.display().to_string());
+                                if contents != "Problem opening the file"{
+
+                                    //file exists, send cmd
+                                    match stream.write(cmd_user.as_bytes()) {
+                                        Ok(_) => (),
+                                        Err(err) => {
+                                            println!("Unable to send command to server: {}", err);
+                                            break;
+                                        }
+                                    }
+
+                                    let mut reader = BufReader::new(&stream);
+
+                                    match reader.read_until(b'\n', &mut buffer) {
+                                        Ok(_) => (),
+                                        Err(err) => {
+                                            println!("Unable to read into buffer: {}", err);
+                                            break;
+                                        }
+                                    }
+
+                                    let buffer = match str::from_utf8(&buffer) {
+                                        Ok(buffer) => buffer,
+                                        Err(err) => {
+                                            println!("Could not write buffer as string: {}", err);
+                                            break;
+                                        }
+                                    };
+
+                                    if buffer == "request file size\n"{
+
+                                        let mut filebytes: Vec<u8> = Vec::new();
+
+                                        match File::open(&path){
+                                            Ok(mut f) => {
+                                                match f.read_to_end(&mut filebytes){
+                                                    Ok(_)=>(),
+                                                    Err(err)=>{
+                                                        println!("Unable to read file: {}", err);
+                                                        break
+                                                    }
+
+                                                };
+                                                ()
+                                            },
+                                            Err(err) => {
+                                                println!("Unable to open into file: {}", err);
+                                                break
+                                            }
+                                        };
+
+                                        let mut file_size = filebytes.len().to_string();
+                                        file_size.push_str("\n");
+
+                                        match stream.write(&file_size.as_bytes()){
+                                            Ok(_) => (),
+                                            Err(err) => {
+                                                println!("Unable to send size to server: {}", err);
+                                                break;
+                                            }
+                                        }
+
+                                        let mut buf: Vec<u8> = Vec::new();
+                                        let mut read = BufReader::new(&stream);
+
+                                        match read.read_until(b'\n', &mut buf) {
+                                            Ok(_) => (),
+                                            Err(err) => {
+                                                println!("Unable to read into buffer: {}", err);
+                                                break;
+                                            }
+                                        }
+        
+                                        let buf = match str::from_utf8(&buf) {
+                                            Ok(buffer) => buffer,
+                                            Err(err) => {
+                                                println!("Could not write buffer as string: {}", err);
+                                                break;
+                                            }
+                                        };
+
+                                        if buf == "request file\n"{
+                                            match stream.write(&filebytes){
+                                                Ok(_) => (),
+                                                Err(err) => {
+                                                    println!("Unable to send bytes to server: {}", err);
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        else{
+                                            println!("Could not request file\n");
+                                        }
+
+                                    }
+                                    else{
+                                        println!("Could not request file size\n");
+                                    }
+                                }
+                                else{
+                                    println!("The file has not been created.");
+                                }
+                            }
                             "receive" => println!("match: receive"),
                             "list" => {
                                 println!("directory listing::");
@@ -664,6 +779,8 @@ fn main() {
                                 }
 
                                 if msg11.trim() == "Successful authentication" {
+
+                                    username.push_str(tokens[1]);
                                     println!("response back: {}", msg11.trim());
 
                                     let mut user_enc_file =
