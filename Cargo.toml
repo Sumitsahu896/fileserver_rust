@@ -17,3 +17,5 @@ path = "src/client.rs"
 [dependencies]
 rand = "0.8.3"
 chrono = "0.4.19"
+encoding = "0.2"
+file-lock = "1.1.20"
