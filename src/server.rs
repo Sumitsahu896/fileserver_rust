@@ -605,6 +605,118 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                         println!("Write successful\n");
 
                   },
+
+                  "receive" if args.len() > 1 => {
+                        let filename = &args[1];
+
+                        let mut path = PathBuf::new();
+                        path.push("./users_server");
+                        path.push(&username);
+                        path.push(&filename);
+
+                        //verify if file exists
+                        let contents = write_file_to_string(&path);
+                        if contents != "Problem opening the file"{
+                              match write!(&stream, "{}", &"file found\n") {
+                                    Ok(_) => (),
+                                    Err(err) => {
+                                        println!("Unable to send command to server: {}", err);
+                                    }
+                              }
+
+                              let mut reader = BufReader::new(&stream);
+                              let mut buffer: Vec<u8> = Vec::new();
+
+                              match reader.read_until(b'\n', &mut buffer) {
+                                  Ok(_) => (),
+                                  Err(err) => {
+                                      println!("Unable to read into buffer: {}", err);
+                                  }
+                              }
+
+                              let buffer = match str::from_utf8(&buffer) {
+                                  Ok(buffer) => buffer,
+                                  Err(err) => {
+                                    panic!("Unable to read into buffer!");
+                                  }
+                              };
+                              
+                              if buffer == "request file size\n"{
+                                    let mut filebytes: Vec<u8> = Vec::new();
+
+                                    match File::open(&path){
+                                        Ok(mut f) => {
+                                            match f.read_to_end(&mut filebytes){
+                                                Ok(_)=>(),
+                                                Err(err)=>{
+                                                    println!("Unable to read file: {}", err);
+                                                }
+      
+                                            };
+                                            ()
+                                        },
+                                        Err(err) => {
+                                            println!("Unable to open into file: {}", err);
+                                        }
+                                    };
+      
+                                    let mut file_size = filebytes.len().to_string();
+                                    file_size.push_str("\n");
+      
+                                    match stream.write(&file_size.as_bytes()){
+                                        Ok(_) => (),
+                                        Err(err) => {
+                                            println!("Unable to send size to server: {}", err);
+                                        }
+                                    }
+
+                                    let mut buffer: Vec<u8> = Vec::new();
+                                    let mut read = BufReader::new(&stream);
+
+                                    match read.read_until(b'\n', &mut buffer) {
+                                        Ok(_) => (),
+                                        Err(err) => {
+                                            println!("Unable to read into buffer: {}", err);
+                                        }
+                                    }
+    
+                                    let buf = match str::from_utf8(&buffer) {
+                                        Ok(buffer) => buffer,
+                                        Err(err) => {
+                                            panic!("Unable to read into buffer!");
+                                        }
+                                    };
+
+                                    if buf == "request file\n"{
+                                          match stream.write(&filebytes){
+                                                Ok(_) => (),
+                                                Err(err) => {
+                                                    println!("Unable to send bytes to server: {}", err);
+                                                }
+                                          }
+                                    }
+                                    else{
+                                          println!("Error reading client request");
+                                    }
+                              }
+                              else{
+                                    println!("Error reading client request");
+                              }     
+
+
+                        }
+                        else{
+                              match write!(&stream, "{}", &"file not found\n") {
+                                    Ok(_) => (),
+                                    Err(err) => {
+                                        println!("Unable to send command to server: {}", err);
+                                    }
+                              }
+                        }
+
+
+                        
+                  },
                    
                  // "list" if is_authenticated && args.len() > 1 && args[1] == "files" => {
                  "list" if args.len() > 1 && args[1] == "files" => {

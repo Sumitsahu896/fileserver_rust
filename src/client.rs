@@ -283,7 +283,105 @@ fn main() {
                                     println!("The file has not been created.");
                                 }
                             }
-                            "receive" => println!("match: receive"),
+                            "receive" => {
+                                match stream.write(cmd_user.as_bytes()) {
+                                    Ok(_) => (),
+                                    Err(err) => {
+                                        println!("Unable to send command to server: {}", err);
+                                        break;
+                                    }
+                                }
+                                let mut reader = BufReader::new(&stream);
+
+                                match reader.read_until(b'\n', &mut buffer) {
+                                    Ok(_) => (),
+                                    Err(err) => {
+                                        println!("Unable to read into buffer: {}", err);
+                                        break;
+                                    }
+                                }
+
+                                let buffer = match str::from_utf8(&buffer) {
+                                    Ok(buffer) => buffer,
+                                    Err(err) => {
+                                        println!("Could not write buffer as string: {}", err);
+                                        break;
+                                    }
+                                };
+
+                                if buffer == "file found\n"{
+                                    let mut path = PathBuf::new();
+                                    let splitcmd: Vec<&str> = cmd_user.split(" ").collect();
+                                    path.push("./users_client");
+                                    path.push(&username);
+                                    path.push(&splitcmd[1].trim());
+
+                                    let mut file = OpenOptions::new()
+                                    .write(true)
+                                    .create(true)
+                                    .open(&path)
+                                    .unwrap();    
+
+                                    match write!(&stream, "{}", &"request file size\n"){
+                                        Ok(_) => {
+                                              println!("requested file size");
+                                              ()
+                                        },
+                                        Err(err) => {
+                                              println!("Unable to send command to client: {}", err);
+                                        }
+                                    }
+
+                                    let mut reader = BufReader::new(&stream);
+                                    let mut file_size_buff = Vec::new();
+            
+                                    match reader.read_until(b'\n', &mut file_size_buff) {
+                                        Ok(_) => (),
+                                        Err(err) => {
+                                            println!("Unable to read into buffer: {}", err);
+                                        }
+                                    }
+                                    file_size_buff.pop();
+            
+                                    //define file size
+                                    let file_size = str::from_utf8(&file_size_buff).unwrap().parse::<usize>().unwrap();
+            
+                                    //request file bytes
+                                    match write!(&stream, "{}", &"request file\n"){
+                                          Ok(_) => {
+                                                println!("requested file");
+                                                ()
+                                          },
+                                          Err(err) => {
+                                                println!("Unable to send command to client: {}", err);
+                                          }
+                                    }
+
+                                    let mut file_bytes = vec![0u8; file_size];
+                                    match reader.read_exact(&mut file_bytes) {
+                                          Ok(_) => (),
+                                          Err(err) => {
+                                              println!("Unable to read into buffer: {}", err);
+                                          }
+                                      }
+            
+                                    //write to file
+                                    match file.write(&file_bytes){
+                                          Ok(_) => (),
+                                          Err(err) => {
+                                              println!("Could not write file bytes to file: {}", err);
+                                          }
+                                    };
+            
+                                    println!("Write successful\n");
+
+                                }
+                                else{
+                                    println!("File not found on server!")
+                                }
+
+
+                            },
                             "list" => {
                                 println!("directory listing::");
                                 match stream.write(cmd_user.as_bytes()) {
