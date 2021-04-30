@@ -16,6 +16,9 @@ use std::path::Path;
 use std::io::{Read, Write, Error};
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
+extern crate file_lock;
+use file_lock::FileLock;
+
 
 // listen for messages from a client
 
@@ -231,6 +234,16 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                         path.push("./users_server/");
                         path.push(&username);
                         path.push(&args[2]);
+                        
+                        let should_we_block  = true;
+			 let lock_for_writing = true;
+
+    			 let mut filelock = match FileLock::lock(path.as_path().to_str().unwrap(), 	should_we_block, lock_for_writing) {
+        			Ok(lock) => lock,
+        			Err(err) => 
+        				continue,
+        				//return Err(err),
+    			};
 
                         let mut contents = write_file_to_string(&path);
 
@@ -281,7 +294,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
                         }
 
-
+			filelock.unlock();
                   }, // end write -a
 
                   "write" if args.len() > 2 && args[1] == "-n" => {
@@ -292,6 +305,17 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                         path.push("./users_server/");
                         path.push(&username);
                         path.push(&args[2]);
+
+                        let should_we_block  = true;
+			 let lock_for_writing = true;
+
+    			 let mut filelock = match FileLock::lock(path.as_path().to_str().unwrap(), 	should_we_block, lock_for_writing) {
+        			Ok(lock) => lock,
+        			Err(err) => 
+        				continue,
+        				//return Err(err),
+    			};
+
 
                         let mut contents = write_file_to_string(&path);
 
@@ -344,7 +368,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
 
                         }
-
+			filelock.unlock();
                   }, // end write -n
 
                   "write" if args.len() > 2 && args[1] == "-f" => {
@@ -355,6 +379,17 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                         path.push("./users_server/");
                         path.push(&username);
                         path.push(&args[2]);
+
+			 let should_we_block  = true;
+			 let lock_for_writing = true;
+
+    			 let mut filelock = match FileLock::lock(path.as_path().to_str().unwrap(), 	should_we_block, lock_for_writing) {
+        			Ok(lock) => lock,
+        			Err(err) => 
+        				continue,
+        				//return Err(err),
+    			};
+
 
                         let mut contents = write_file_to_string(&path);
 
@@ -409,7 +444,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                               //write properly formatted data to destination file
                               temp_file.write_all(&msg.as_bytes())?;
                         }
-
+			filelock.unlock();
                   }, // end write -f
 
                   "create" => {
@@ -1281,5 +1316,6 @@ impl StringUtils for str {
         self.substring(start, len)
     }
 }
+
 
 
