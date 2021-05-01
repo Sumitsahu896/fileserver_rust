@@ -3,11 +3,11 @@ use std::char;
 use std::fs;
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufRead, BufReader, Write};
-use std::io::{Error, Read};
-use std::io::SeekFrom;
+use std::io::{Read};
+
 use std::net::TcpStream;
 use std::path::PathBuf;
-use std::env;
+
 use std::ops::{Bound, RangeBounds};
 use std::str;
 extern crate chrono;
@@ -316,11 +316,17 @@ fn main() {
                                     path.push(&username);
                                     path.push(&splitcmd[1].trim());
 
-                                    let mut file = OpenOptions::new()
+                                    let mut file = match OpenOptions::new()
                                     .write(true)
                                     .create(true)
-                                    .open(&path)
-                                    .unwrap();    
+                                    .open(&path){
+                                    Err(err) =>{
+                                          eprintln!("error opening file for write -a mode {}",err);
+                                          break;
+                                    } ,
+                                    Ok(file) => (file)
+                              };
+  
 
                                     match write!(&stream, "{}", &"request file size\n"){
                                         Ok(_) => {
@@ -848,8 +854,24 @@ fn main() {
                             if msg10.trim() == "Old encrypted matched.Requesting new encrypted" {
                                 println!("response back: {}", msg10.trim());
                                 //println!("{},{}",private_key,public_key);
-                                let private_key: u8 = private_key.parse().unwrap();
-                                let public_key: u8 = public_key.parse().unwrap();
+                                let private_key: u8 =match private_key.parse(){
+                                    Ok(private_key)=>(private_key),
+                                    Err(err)=>{
+                                        println!("Unable to parse private key: {}",err);
+                                        break;
+                                    }
+                                };
+
+
+
+                                //let public_key: u8 = public_key.parse().unwrap();
+                                let public_key: u8 = match public_key.parse(){
+                                    Ok(public_key)=>(public_key),
+                                    Err(err)=>{
+                                        println!("Unable to parse private key: {}",err);
+                                        break;
+                                    }
+                                };
 
                                 let mut new_encrypted_text: Vec<char> = Vec::new();
                                 encryptedTextt(&mut new_encrypted_text, &private_key, &public_key);

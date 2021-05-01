@@ -1,5 +1,5 @@
 // server to listen for commands from client threads
-use std::env;
+
 mod search;
 use std::fs;
 use std::str;
@@ -11,11 +11,11 @@ use std::net::{TcpListener, TcpStream};
 use std::net::{SocketAddr};
 use std::thread;
 use std::ops::{Bound, RangeBounds};
-use std::sync::{Arc, Mutex};
+
 use std::path::Path;
 use std::io::{Read, Write, Error};
 use std::fs::File;
-use std::io::{self, BufRead, BufReader};
+use std::io::{BufRead, BufReader};
 extern crate file_lock;
 use file_lock::FileLock;
 
@@ -26,8 +26,8 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 	println!("Received a connection from: {}", 
 	stream.peer_addr()?);	// network address of client unwrap to OK if
 	let mut buffer = [0; 1024]; 	// zero buffer
-      let mut is_authenticated=false;
-      let mut is_guest=false;
+      //let mut is_authenticated=false;
+      //let mut is_guest=false;
       let mut username=String::from("");
       match fs::create_dir_all("users_server/") {
             Err(why) => {
@@ -47,7 +47,13 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
     
       
 	loop {
-		let bytes_read = stream.read(&mut buffer)?; // unwrap to Ok if read from stream successful
+		let bytes_read =match stream.read(&mut buffer){
+                  Ok(bytes_read) => (bytes_read),
+                  Err(err)=> {
+                     println!("Stream error, unable to read streadm: {}", err);
+                     return Err(err);
+                  }
+            }; // unwrap to Ok if read from stream successful
 		if bytes_read == 0 {	// no more to read
 			return Ok(());
 			
@@ -237,15 +243,23 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                         
                         let should_we_block  = true;
 			 let lock_for_writing = true;
+                   let path_to_str=match path.as_path().to_str(){
+                        Some(tt) => (tt),
+                        None=> {
+                           println!("No PATH:");  // it will throw error below anyway without panicking
+                           continue
+                           
+                        }
+                  };
 
-    			 let mut filelock = match FileLock::lock(path.as_path().to_str().unwrap(), 	should_we_block, lock_for_writing) {
+    			 let filelock = match FileLock::lock(path_to_str, 	should_we_block, lock_for_writing) {
         			Ok(lock) => lock,
-        			Err(err) => 
+        			Err(_) => 
         				continue,
         				//return Err(err),
     			};
 
-                        let mut contents = write_file_to_string(&path);
+                        let contents = write_file_to_string(&path);
 
                         if contents == "Problem opening the file"{
                               match write!(stream, "{}", &"Problem finding file\n"){
@@ -259,11 +273,18 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                         else{
 
                               //open file with append options
-                              let mut file = OpenOptions::new()
+                              let mut file = match OpenOptions::new()
                               .write(true)
                               .append(true)
-                              .open(path)
-                              .unwrap();
+                              .open(&path){
+                                    Err(err) =>{
+                                          eprintln!("error opening file for write -a mode {}",err);
+                                          return Err(err);
+                                    } ,
+                                    Ok(file) => (file)
+                              };
+
+                      
 
                               //ask client for text to append
                               match write!(stream, "{}", &"Enter text to append to end of file\n"){
@@ -309,9 +330,19 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                         let should_we_block  = true;
 			 let lock_for_writing = true;
 
-    			 let mut filelock = match FileLock::lock(path.as_path().to_str().unwrap(), 	should_we_block, lock_for_writing) {
+
+                   let path_to_str=match path.as_path().to_str(){
+                        Some(tt) => (tt),
+                        None=> {
+                           println!("No PATH:"); // it will throw error below anyway without panicking
+                           continue
+                           
+                        }
+                  };
+
+    			 let filelock = match FileLock::lock(path_to_str, 	should_we_block, lock_for_writing) {
         			Ok(lock) => lock,
-        			Err(err) => 
+        			Err(_) => 
         				continue,
         				//return Err(err),
     			};
@@ -331,10 +362,21 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                         else{
 
                               //open file
-                              let mut file = OpenOptions::new()
+                              let mut file =OpenOptions::new()
                               .write(true)
                               .open(path)
                               .unwrap();
+                              
+                              
+                              // {
+                              //       Err(err) =>{
+                              //           eprintln!("error opening file for overwrite mode {}",err);
+                              //           Err(err);
+                              //        } ,
+                              //       Ok(file) => (file)
+                              // };
+
+                       
 
                               //ask client for text
                               match write!(stream, "{}", &"Enter text to overwrite\n"){
@@ -383,15 +425,24 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 			 let should_we_block  = true;
 			 let lock_for_writing = true;
 
-    			 let mut filelock = match FileLock::lock(path.as_path().to_str().unwrap(), 	should_we_block, lock_for_writing) {
+                   let path_to_str=match path.as_path().to_str(){
+                        Some(tt) => (tt),
+                        None=> {
+                           println!("No PATH:"); // it will throw error below anyway without panicking
+                           continue
+                           
+                        }
+                  };
+
+    			 let filelock = match FileLock::lock(path_to_str, 	should_we_block, lock_for_writing) {
         			Ok(lock) => lock,
-        			Err(err) => 
+        			Err(_) => 
         				continue,
         				//return Err(err),
     			};
 
 
-                        let mut contents = write_file_to_string(&path);
+                        let contents = write_file_to_string(&path);
 
                         if contents == "Problem opening the file"{
                               match write!(stream, "{}", &"Problem finding file\n"){
@@ -405,10 +456,10 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                         else{
 
                               //open file
-                              let mut file = OpenOptions::new()
-                              .write(true)
-                              .open(&path)
-                              .unwrap();
+                              // let file = OpenOptions::new()
+                              // .write(true)
+                              // .open(&path);
+                              // //.unwrap();
 
                               //ask client for text
                               match write!(stream, "{}", &"Enter text to prepend\n"){
@@ -577,11 +628,21 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                         let filename = file_path[file_path.len()-1];
                         path.push(&filename);
 
-                        let mut file = OpenOptions::new()
+                        let mut file = match OpenOptions::new()
                         .write(true)
                         .create(true)
-                        .open(&path)
-                        .unwrap();
+                        .open(&path){
+                              Err(err) =>{
+                                    eprintln!("error opening file for send mode {}",err);
+                                    return Err(err);
+                              } ,
+                              Ok(file) => (file)
+                        };
+                        //.unwrap();
+
+                  
+                        
+
                         
                         //request file size from client
                         match write!(&stream, "{}", &"request file size\n"){
@@ -672,7 +733,10 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                               let buffer = match str::from_utf8(&buffer) {
                                   Ok(buffer) => buffer,
                                   Err(err) => {
-                                    panic!("Unable to read into buffer!");
+                                    //panic!("Unable to read into buffer!");
+                                    println!("Could not write buffer as string: {}", err);
+                                    continue
+                                  
                                   }
                               };
                               
@@ -718,7 +782,10 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                     let buf = match str::from_utf8(&buffer) {
                                         Ok(buffer) => buffer,
                                         Err(err) => {
-                                            panic!("Unable to read into buffer!");
+                                            //panic!("Unable to read into buffer!");
+                                            println!("Unable to read into buffer!: {}", err);
+                                            continue
+                                          
                                         }
                                     };
 
@@ -876,7 +943,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                           }
                                           }
       
-                                    is_authenticated=true;
+                                    //is_authenticated=true;
                                     
 
                                     // access the data by mutably borrowing the guard
