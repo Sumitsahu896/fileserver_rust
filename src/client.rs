@@ -415,7 +415,7 @@ fn main() {
                             "logout" => {
                                 println!("match: logout");
 
-                                match write!(&stream, "{}{}", &"logout", "\n") {
+                                match write!(&stream, "{}", &"logout\n") {
                                     Ok(_) => (),
                                     Err(err) => {
                                         println!("Unable to send command to server: {}", err);
@@ -700,7 +700,7 @@ fn main() {
                                     "show users" => {
                                         println!("match: show users");
 
-                                        match write!(&stream, "{}{}", &"show users", "\n") {
+                                        match write!(&stream, "{}", &"show users\n") {
                                             Ok(_) => {
                                                 let mut reader = BufReader::new(&stream);
                                                 let mut msg11 = String::from("");
@@ -730,7 +730,7 @@ fn main() {
                                     "show active" => {
                                         println!("match: show active");
 
-                                        match write!(&stream, "{}{}", &"show active", "\n") {
+                                        match write!(&stream, "{}", &"show active\n") {
                                             Ok(_) => {
                                                 let mut reader = BufReader::new(&stream);
                                                 let mut msg13 = String::from("");

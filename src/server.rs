@@ -887,7 +887,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                     let active_file =OpenOptions::new()
                                     .read(true)
                                     .write(true)
-                                    .create(true)
+                                    //.create(true)
                                     .open("active.txt");
 
                                     let mut vec_usernames=words_from_file("active.txt");
@@ -1132,6 +1132,15 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 }
 
 fn main() {
+      let active_file = File::create("active.txt");
+      match active_file{
+            Err(err) =>{
+                  eprintln!("error creating active.txt {}",err);
+                  return;
+            } ,
+            Ok(active_file) => (active_file)
+
+            };
  	let addrs = [
       		SocketAddr::from(([127, 0, 0, 1], 2000)),
       		SocketAddr::from(([127, 0, 0, 1], 7070)),
@@ -1248,7 +1257,7 @@ fn write_file_to_string_string(path1:&String)-> String
       let file =OpenOptions::new()
       .read(true)
       .write(true)
-      .create(true)
+      // .create(true)
       .open(&path1);
       //let file = fs::File::open(&path1);
       let mut contents = String::new();
