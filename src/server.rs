@@ -254,9 +254,9 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
     			 let filelock = match FileLock::lock(path_to_str, 	should_we_block, lock_for_writing) {
         			Ok(lock) => lock,
-        			Err(_) => 
-        				continue,
-        				//return Err(err),
+        			Err(err) => 
+        				
+        				return Err(err),
     			};
 
                         let contents = write_file_to_string(&path);
@@ -342,9 +342,8 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
     			 let filelock = match FileLock::lock(path_to_str, 	should_we_block, lock_for_writing) {
         			Ok(lock) => lock,
-        			Err(_) => 
-        				continue,
-        				//return Err(err),
+        			Err(err) => 
+        				return Err(err),
     			};
 
 
@@ -436,9 +435,9 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
     			 let filelock = match FileLock::lock(path_to_str, 	should_we_block, lock_for_writing) {
         			Ok(lock) => lock,
-        			Err(_) => 
-        				continue,
-        				//return Err(err),
+        			Err(err) => 
+        			
+        				return Err(err),
     			};
 
 
@@ -1171,7 +1170,8 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 				//if !authenticated_user && tokens[0] == "search" {
 				//	response = "only authenticated users may use search\n";
 				//} else {	
-					let response = "Invalid command line -- Please check syntax :)\n#";
+				//	let response = "Invalid command line -- Please check syntax :)\n#";
+					let response = "Invalid command line -- Please check syntax :)\n\r";
 				//}
  				match write!(stream, "{}", &response){
                                        Ok(_) => (),
@@ -1392,6 +1392,7 @@ impl StringUtils for str {
         self.substring(start, len)
     }
 }
+
 
 
 
