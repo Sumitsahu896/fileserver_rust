@@ -155,7 +155,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                                 let r_directory=fs::read_dir(path);
                                                 let r_directory=match r_directory {
                                                  Err(e) =>{
-                                                      eprintln!("Path problem :{:?}", e);
+                                                      eprintln!("Path problem in 'search' command cannot find the directory to search files inside :{:?}", e);
                                                       return Err(e)
                                                       } 
                                                   Ok(r_directory) => (r_directory)
@@ -180,7 +180,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                             
                                                       let this_file_name=match this_file_name{
                                                           None =>{
-                                                              eprintln!("error");
+                                                              eprintln!("error in search -s command invalid this_file_name variable");
                                                               break
                                                           } ,
                                                           Some(this_file_name)=> this_file_name.to_string()
@@ -214,7 +214,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                           match write!(stream, "{}", &answer){
                                                 Ok(_) => (),
                                                 Err(err) => {
-                                                      println!("Unable to send command to server: {}", err);
+                                                      println!("Unable to send command to client in search -s command: {}", err);
                                                       return Err(err);
                                                 }
                                                          
@@ -246,7 +246,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                    let path_to_str=match path.as_path().to_str(){
                         Some(tt) => (tt),
                         None=> {
-                           println!("No PATH:");  // it will throw error below anyway without panicking
+                           println!("No PATH:invalid path in write -a command");  // it will throw error below anyway without panicking
                            continue
                            
                         }
@@ -265,7 +265,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                               match write!(stream, "{}", &"Problem finding file\n"){
                                     Ok(_) => (),
                                     Err(err) => {
-                                          println!("Unable to send command to server: {}", err);
+                                          println!("Unable to send command to client in write -a command when sending contents: {}", err);
                                           return Err(err);
                                     }
                               }
@@ -290,7 +290,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                               match write!(stream, "{}", &"Enter text to append to end of file\n"){
                                     Ok(_) => (),
                                     Err(err) => {
-                                          println!("Unable to send command to server: {}", err);
+                                          println!("Unable to send command to client during requesting text to be appended in write -a mode: {}", err);
                                          return Err(err);
                                     }
                               }
@@ -302,7 +302,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 				      match reader.read_line(&mut msg) {
 					      Ok(_) => (),
 					      Err(err) => {
-					      	println!("Unable to read into buffer: {}", err);
+					      	println!("Unable to read into buffer in write -a during reader: {}", err);
 					      }
                               }
                               msg.pop();
@@ -310,7 +310,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
                               //write to file, append only
                               if let Err(e) = write!(file, "{}", &msg) {
-                                    eprintln!("Couldn't write to file: {}", e);
+                                    eprintln!("Couldn't write to file in write -a command: {}", e);
                                 }
 
                         }
@@ -334,7 +334,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                    let path_to_str=match path.as_path().to_str(){
                         Some(tt) => (tt),
                         None=> {
-                           println!("No PATH:"); // it will throw error below anyway without panicking
+                           println!("in write -n command:invalid path this may be users_server folder is not there"); // it will throw error below anyway without panicking
                            continue
                            
                         }
@@ -353,7 +353,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                               match write!(stream, "{}", &"Problem finding file\n"){
                                     Ok(_) => (),
                                     Err(err) => {
-                                          println!("Unable to send command to server: {}", err);
+                                          println!("Unable to send command to client in write -n command: {}", err);
                                           return Err(err);
                                     }
                               }
@@ -361,19 +361,20 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                         else{
 
                               //open file
-                              let mut file =OpenOptions::new()
+                              let mut file =match OpenOptions::new()
                               .write(true)
-                              .open(path)
-                              .unwrap();
+                              //.open(path)
+                              //.//unwrap();
+                              .open(&path){
+                                    Err(err) =>{
+                                          eprintln!("error opening file for write -n command {}",err);
+                                          return Err(err);
+                                    } ,
+                                    Ok(file) => (file)
+                              };
                               
                               
-                              // {
-                              //       Err(err) =>{
-                              //           eprintln!("error opening file for overwrite mode {}",err);
-                              //           Err(err);
-                              //        } ,
-                              //       Ok(file) => (file)
-                              // };
+                           
 
                        
 
@@ -381,7 +382,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                               match write!(stream, "{}", &"Enter text to overwrite\n"){
                                     Ok(_) => (),
                                     Err(err) => {
-                                          println!("Unable to send command to server: {}", err);
+                                          println!("Unable to send command to client during sending 'Enter text to overwrite' in write -f: {}", err);
                                          return Err(err);
                                     }
                               }
@@ -393,7 +394,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 				      match reader.read_line(&mut msg) {
 					      Ok(_) => (),
 					      Err(err) => {
-					      	println!("Unable to read into buffer: {}", err);
+					      	println!("Unable to read into buffer in write -n command: {}", err);
 					      }
                               }
                               msg.pop();
@@ -401,10 +402,10 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
                               //write to file, overwrite text
                               if let Err(e) = file.seek(SeekFrom::Start(0)){
-                                    eprintln!("Couldn't seek in file: {}", e);
+                                    eprintln!("Couldn't seek in file in write -n command: {}", e);
                               }
                               if let Err(e) = write!(file, "{}", &msg) {
-                                    eprintln!("Couldn't write to file: {}", e);
+                                    eprintln!("Couldn't write to file in write -n command: {}", e);
                               }
 
 
@@ -427,7 +428,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                    let path_to_str=match path.as_path().to_str(){
                         Some(tt) => (tt),
                         None=> {
-                           println!("No PATH:"); // it will throw error below anyway without panicking
+                           println!("path problem in write -f command"); // it will throw error below anyway without panicking
                            continue
                            
                         }
@@ -447,24 +448,20 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                               match write!(stream, "{}", &"Problem finding file\n"){
                                     Ok(_) => (),
                                     Err(err) => {
-                                          println!("Unable to send command to server: {}", err);
+                                          println!("Unable to send command to server in write -f command during sending sentence:'Problem opening the file' : {}", err);
                                           return Err(err);
                                     }
                               }
                         }
                         else{
 
-                              //open file
-                              // let file = OpenOptions::new()
-                              // .write(true)
-                              // .open(&path);
-                              // //.unwrap();
+                        
 
                               //ask client for text
                               match write!(stream, "{}", &"Enter text to prepend\n"){
                                     Ok(_) => (),
                                     Err(err) => {
-                                          println!("Unable to send command to server: {}", err);
+                                          println!("Unable to send command to client in write -f command: {}", err);
                                          return Err(err);
                                     }
                               }
@@ -476,7 +473,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 				      match reader.read_line(&mut msg) {
 					      Ok(_) => (),
 					      Err(err) => {
-					      	println!("Unable to read into buffer: {}", err);
+					      	println!("Unable to read into buffer in write -f command: {}", err);
 					      }
                               }
                               msg.pop();
@@ -512,7 +509,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                               match write!(stream, "{}", &"User is already created. Please try again.\n"){
                               Ok(_) => (),
                               Err(err) => {
-                                    println!("Unable to send command to server: {}", err);
+                                    println!("Unable to send command to client in create user command: {}", err);
                                     //return Err(err);
                               }
                               }
@@ -526,7 +523,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                           match write!(stream, "{}", &"Error creating user dir..\n"){
                                                 Ok(_) => (),
                                                 Err(err) => {
-                                                      println!("Unable to send command to server: {}", err);
+                                                      println!("Unable to send command to client in create user command: {}", err);
                                                       return Err(err);
                                                 }
                                           }
@@ -546,7 +543,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                                       ()
                                                 },
                                                 Err(err) => {
-                                                      println!("Unable to send command to server: {}", err);
+                                                      println!("Unable to send command to client during requesting public key: {}", err);
                                                       return Err(err);
                                                 }
                                           }
@@ -554,7 +551,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                           match reader.read_line(&mut msg) {
 								Ok(_) => (),
 								Err(err) => {
-									println!("Unable to read into buffer: {}", err);
+									println!("Unable to read into buffer in create user command: {}", err);
 									return Err(err);
 								}
 								   
@@ -571,7 +568,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                                 }
                                                 ,
                                                 Err(err) => {
-                                                      println!("Unable to send command to server: {}", err);
+                                                      println!("Unable to send command to client during requesting encrypted: {}", err);
                                                       return Err(err);
                                                 }
                                           }
@@ -580,7 +577,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                           match reader.read_line(&mut msg2) {
 								Ok(_) => (),
 								Err(err) => {
-									println!("Unable to read into buffer: {}", err);
+									println!("Unable to read into buffer in create user command: {}", err);
 									return Err(err);
 								}
 								   
@@ -598,7 +595,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                                 }
                                                 ,
                                                 Err(err) => {
-                                                      println!("Unable to send command to server: {}", err);
+                                                      println!("Unable to send command to client in create user command: {}", err);
                                                       return Err(err);
                                                 }
                                           }
@@ -632,7 +629,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                         .create(true)
                         .open(&path){
                               Err(err) =>{
-                                    eprintln!("error opening file for send mode {}",err);
+                                    eprintln!("error opening file for send command {}",err);
                                     return Err(err);
                               } ,
                               Ok(file) => (file)
@@ -650,7 +647,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                     ()
                               },
                               Err(err) => {
-                                    println!("Unable to send command to client: {}", err);
+                                    println!("Unable to send command to client in send command during requesting file size: {}", err);
                                     return Err(err);
                               }
                         }
@@ -661,7 +658,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                         match reader.read_until(b'\n', &mut file_size_buff) {
                             Ok(_) => (),
                             Err(err) => {
-                                println!("Unable to read into buffer: {}", err);
+                                println!("Unable to read into buffer in send command: {}", err);
                             }
                         }
                         file_size_buff.pop();
@@ -676,7 +673,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                     ()
                               },
                               Err(err) => {
-                                    println!("Unable to send command to client: {}", err);
+                                    println!("Unable to send command to server during requesting file to send: {}", err);
                                     return Err(err);
                               }
                         }
@@ -685,7 +682,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                         match reader.read_exact(&mut file_bytes) {
                               Ok(_) => (),
                               Err(err) => {
-                                  println!("Unable to read into buffer: {}", err);
+                                  println!("Unable to read into buffer in send command: {}", err);
                               }
                           }
 
@@ -693,7 +690,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                         match file.write(&file_bytes){
                               Ok(_) => (),
                               Err(err) => {
-                                  println!("Could not write file bytes to file: {}", err);
+                                  println!("Could not write file bytes to file in send command: {}", err);
                               }
                         };
 
@@ -715,7 +712,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                               match write!(&stream, "{}", &"file found\n") {
                                     Ok(_) => (),
                                     Err(err) => {
-                                        println!("Unable to send command to server: {}", err);
+                                        println!("Unable to send command to client in receive command: {}", err);
                                     }
                               }
 
@@ -725,7 +722,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                               match reader.read_until(b'\n', &mut buffer) {
                                   Ok(_) => (),
                                   Err(err) => {
-                                      println!("Unable to read into buffer: {}", err);
+                                      println!("Unable to read into buffer in receive command during reading file: {}", err);
                                   }
                               }
 
@@ -747,14 +744,14 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                             match f.read_to_end(&mut filebytes){
                                                 Ok(_)=>(),
                                                 Err(err)=>{
-                                                    println!("Unable to read file: {}", err);
+                                                    println!("Unable to read file to be sent: {}", err);
                                                 }
       
                                             };
                                             ()
                                         },
                                         Err(err) => {
-                                            println!("Unable to open into file: {}", err);
+                                            println!("Unable to open into file to be sent to client: {}", err);
                                         }
                                     };
       
@@ -764,7 +761,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                     match stream.write(&file_size.as_bytes()){
                                         Ok(_) => (),
                                         Err(err) => {
-                                            println!("Unable to send size to server: {}", err);
+                                            println!("Unable to send file size to client: {}", err);
                                         }
                                     }
 
@@ -774,7 +771,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                     match read.read_until(b'\n', &mut buffer) {
                                         Ok(_) => (),
                                         Err(err) => {
-                                            println!("Unable to read into buffer: {}", err);
+                                            println!("Unable to read into buffer in receive command: {}", err);
                                         }
                                     }
     
@@ -782,7 +779,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                         Ok(buffer) => buffer,
                                         Err(err) => {
                                             //panic!("Unable to read into buffer!");
-                                            println!("Unable to read into buffer!: {}", err);
+                                            println!("Unable to read into buffer in receive command!: {}", err);
                                             continue
                                           
                                         }
@@ -792,7 +789,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                           match stream.write(&filebytes){
                                                 Ok(_) => (),
                                                 Err(err) => {
-                                                    println!("Unable to send bytes to server: {}", err);
+                                                    println!("Unable to send bytes to client during requesting file: {}", err);
                                                 }
                                           }
                                     }
@@ -810,7 +807,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                               match write!(&stream, "{}", &"file not found\n") {
                                     Ok(_) => (),
                                     Err(err) => {
-                                        println!("Unable to send command to server: {}", err);
+                                        println!("Unable to send command to client during sending file not found: {}", err);
                                     }
                               }
                         }
@@ -831,7 +828,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                        let r_directory=fs::read_dir(path);
                        let r_directory=match r_directory {
                        	Err(e) =>{
-                               	eprintln!("Path problem :{:?}", e);
+                               	eprintln!("Path problem in 'list files' command: cannot find the user's directory under users_server directory to list files:{:?}", e);
                                        return Err(e)
                                 } 
                                 Ok(r_directory) => (r_directory)
@@ -847,7 +844,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                        
                        	let this_file_name=match this_file_name{
                                 None =>{
-                                       eprintln!("error");
+                                       eprintln!("error in list files the is no such a file under the directory");
                                        break
                                 } ,
                                 Some(this_file_name)=> this_file_name.to_string()
@@ -859,7 +856,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                       	match write!(stream, "{}", &file_list){
                                Ok(_) => (),
                                Err(err) => {
-                                      println!("Unable to send command to server: {}", err);
+                                      println!("Unable to send command to client in list files: {}", err);
                                       return Err(err);
                                 }
                                                          
@@ -887,7 +884,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                               match write!(stream, "{}", &"request encrypted\n"){
                                     Ok(_) => (),
                                     Err(err) => {
-                                          println!("Unable to send command to client: {}", err);
+                                          println!("Unable to send request encrypted to client: {}", err);
                                           //return Err(err);
                                     }
                                     }
@@ -914,7 +911,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                     match write!(stream, "{}", &"Old encrypted matched.Requesting new encrypted\n"){
                                           Ok(_) => (),
                                           Err(err) => {
-                                                println!("Unable to send command to client: {}", err);
+                                                println!("Unable to send command to during requesting new encrypted: {}", err);
                                                 //return Err(err);
                                           }
                                           }
@@ -937,7 +934,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                     match write!(stream, "{}", &"Successful authentication\n"){
                                           Ok(_) => (),
                                           Err(err) => {
-                                                println!("Unable to send command to client: {}", err);
+                                                println!("Unable to send command to client during sending Successful authentication message: {}", err);
                                                 //return Err(err);
                                           }
                                           }
@@ -971,13 +968,13 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 									  match active_file.write_all(usernames.as_bytes()){
 										Ok(_) => (),
 										Err(err) => {
-											println!("Unable to read into buffer: {}", err);
+											println!("Unable to read into buffer during reading active users file: {}", err);
 											return Err(err);
 										}
 									  }
 								     },
 								     Err(err) => {
-									println!("Unable to read into buffer: {}", err);
+									println!("Unable to read into buffer during reading active users file: {}", err);
 									return Err(err);
 								}
 							     } 
@@ -1004,7 +1001,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                     match write!(stream, "{}", &"login failed.Wrong encrypted\n"){
                                           Ok(_) => (),
                                           Err(err) => {
-                                                println!("Unable to send command to client: {}", err);
+                                                println!("Unable to send command 'login failed.Wrong encrypted' to client: {}", err);
                                                 //return Err(err);
                                           }
                                           }
@@ -1021,7 +1018,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                               match write!(stream, "{}", &"User is not created. Please try again.\n"){
                                     Ok(_) => (),
                                     Err(err) => {
-                                          println!("Unable to send command to client: {}", err);
+                                          println!("Unable to send command to server: {}", err);
                                           //return Err(err);
                                     }
                                     }
@@ -1037,7 +1034,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                         match reader.read_line(&mut msg12) {
                               Ok(_) => (),
                               Err(err) => {
-                                    println!("Unable to read into buffer: {}", err);
+                                    println!("Unable to read into buffer in logout command: {}", err);
                                     return Err(err);
                               }
                         }
@@ -1066,7 +1063,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                                           active_file.write_all(active_users.join(" ").as_bytes())?  
                                          },
                                          Err(err) => {
-                                          println!("Unable to read into buffer: {}", err);
+                                          println!("Unable to read into buffer in show active command: {}", err);
                                           return Err(err);
                                     }
                                    } 
@@ -1102,7 +1099,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                               let r_directory=fs::read_dir("./users_server/");
                               let r_directory=match r_directory {
                                     Err(e) =>{
-                                      eprintln!("Path problem :{:?}", e);
+                                      eprintln!("Path problem in 'show users' command: cannot find the users_server directory to registered users {:?}", e);
                                       return Err(e)
                                           } 
                                    Ok(r_directory) => (r_directory)

@@ -91,7 +91,7 @@ fn main() {
                                 match stream.write(cmd_user.as_bytes()) {
                                     Ok(_) => (),
                                     Err(err) => {
-                                        println!("Unable to send command to server: {}", err);
+                                        println!("Unable to send command to server in search: {}", err);
                                         break;
                                     }
                                 }
@@ -102,7 +102,7 @@ fn main() {
                                 match reader.read_until(b'\r', &mut buffer) {
                                     Ok(_) => (),
                                     Err(err) => {
-                                        println!("Unable to read into buffer: {}", err);
+                                        println!("Unable to read into buffer in search command on client side: {}", err);
                                         break;
                                     }
                                 }
@@ -110,7 +110,7 @@ fn main() {
                                 let buffer = match str::from_utf8(&buffer) {
                                     Ok(buffer) => buffer,
                                     Err(err) => {
-                                        println!("Could not write buffer as string: {}", err);
+                                        println!("Could not write buffer as string when writing search response to string: {}", err);
                                         break;
                                     }
                                 };
@@ -122,7 +122,7 @@ fn main() {
                                 match stream.write(cmd_user.as_bytes()) {
                                     Ok(_) => (),
                                     Err(err) => {
-                                        println!("Unable to send command to server: {}", err);
+                                        println!("Unable to send command to server in write: {}", err);
                                         break;
                                     }
                                 }
@@ -165,7 +165,7 @@ fn main() {
                                     match stream.write(res.as_bytes()) {
                                         Ok(_) => (),
                                         Err(err) => {
-                                            println!("Unable to send text to server: {}", err);
+                                            println!("Unable to send text to server in write on client side: {}", err);
                                             break;
                                         }
                                     }
@@ -495,14 +495,7 @@ fn main() {
                         // guest command options
 
                         let tokens: Vec<&str> = cmd_guest.trim().split_whitespace().collect();
-                        // let cmd = cmd_guest
-                        // .split_whitespace()
-                        // .next()
-                        // .unwrap_or("");
-                        //    println!("cmd: {}", cmd);
-
-                        //	match tokens.len() {
-                        //	3 => {
+                  
                         match tokens[0] {
                             "create" => {
                                 if tokens.len() == 3 && tokens[1] == "user" {
@@ -1042,39 +1035,4 @@ impl StringUtils for str {
     }
 }
 
-// let date = Local::now().format("%d%m%Y%H%M%S").to_string();
-// let mut rng = rand::thread_rng();
-// let modulo:u8=64;
-// let private_key:u8=rng.gen_range(1..modulo);
-// let public_key:u8= modulo- (private_key);
-// let mut encrypted_text:Vec<char>=Vec::new();
 
-// let encrypted_text_temp:Vec<char>=date.chars().collect();
-// for c in &encrypted_text_temp {
-// 	//println!("{}:{}", c,(c.to_digit(10).unwrap()+ public_key)%modulo);
-// 	//println!("{}:{}", c,(((c.to_digit(10).unwrap()) as u8+public_key)% modulo) as char);
-// 	println!("{}:{}", *c,((*c as u8+public_key)% modulo) as char);
-
-// 	//encrypted_text[i]=char::from_digit((c.to_digit(10).unwrap()+public_key)% modulo, 10).unwrap();
-// 	encrypted_text.push(((*c as u8+public_key)% modulo) as char);
-// 	//(c.to_digit(10).unwrap()+public_key)% modulo,10;
-
-//   }
-
-//   let encryptedString=encrypted_text.iter().cloned().collect::<String>();  //returned encrypted string
-// to check
-//   let mut server_encrypted_text:Vec<char>=Vec::new();
-
-//   for c in encrypted_text {
-
-//       server_encrypted_text.push(((c as u8+private_key)% modulo) as char);
-//   }
-
-//   //println!("hiiiii: {}",server_encrypted_text.iter().cloned().collect::<String>());
-//   let serverstring=server_encrypted_text.iter().cloned().collect::<String>();
-
-//   println!("{}",serverstring);
-
-//   const RADIX: u32 = 10;
-//   let x = "134";
-//   println!("{}", x.chars().map(|c| c.to_digit(RADIX).unwrap()).sum::<u32>());
