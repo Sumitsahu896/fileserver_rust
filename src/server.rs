@@ -315,7 +315,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
                         }
 
-			filelock.unlock();
+			// filelock.unlock(); // not necessary since will unlock on drop
                   }, // end write -a
 
                   "write" if args.len() > 2 && args[1] == "-n" => {
@@ -410,7 +410,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
 
 
                         }
-			filelock.unlock();
+			//filelock.unlock(); // not necessary since will unlock on drop
                   }, // end write -n
 
                   "write" if args.len() > 2 && args[1] == "-f" => {
@@ -491,7 +491,7 @@ fn connection_thread(mut stream: TcpStream) -> Result<(), Error> {
                               //write properly formatted data to destination file
                               temp_file.write_all(&msg.as_bytes())?;
                         }
-			filelock.unlock();
+			//filelock.unlock(); // not necessary since will unlock on drop
                   }, // end write -f
 
                   "create" => {
@@ -1389,6 +1389,7 @@ impl StringUtils for str {
         self.substring(start, len)
     }
 }
+
 
 
 
