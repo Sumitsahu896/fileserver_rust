@@ -420,7 +420,7 @@ fn main() {
                                     }
                                 };
 
-                                print!("{}\nThat's all folks! \n", buffer);
+                                 print!("{}\n-- -- --\n", buffer);
                             }
                             "logout" => {
                                 println!("match: logout");
